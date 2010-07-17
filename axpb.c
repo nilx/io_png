@@ -38,8 +38,7 @@
  */
 int main(int argc, char *const *argv)
 {
-    unsigned char *img, *img_ptr, *img_end;
-    float *fimg, *fimg_ptr;
+    float *img;
     size_t nx, ny;
     unsigned char nc;
     float a, b;
@@ -65,33 +64,25 @@ int main(int argc, char *const *argv)
     b = atof(argv[3]);
 
     /* read the PNG input image */
-    img = read_png_any2u8(argv[2], &nx, &ny, &nc);
-
-    /* convert to float */
-    img_ptr = img;
-    img_end = img_ptr + nx * ny * nc;
-    fimg = (float *) malloc(nx * ny * nc * sizeof(float));
-    fimg_ptr = fimg;
-    while (img_ptr < img_end)
-	*fimg_ptr++ = (float) *img_ptr++;
+    img = read_png_f32(argv[2], &nx, &ny, &nc);
 
     for (k=0; k<nc; k++)
     {
 	printf("%i : ", (int) k);
 	for (i=k*nx*ny; i<(k+1)*nx*ny; i++)
-	    printf("%i ", (int) fimg[i]);
+	    printf("%i ", (int) img[i]);
 	printf("\n");
     }
     printf("\n");
 
     /* transform the data */
-    axpb(fimg, nx * ny * nc, a, b);
+    axpb(img, nx * ny * nc, a, b);
 
     for (k=0; k<nc; k++)
     {
 	printf("%i : ", (int) k);
 	for (i=k*nx*ny; i<(k+1)*nx*ny; i++)
-	    printf("%i ", (int) fimg[i]);
+	    printf("%i ", (int) img[i]);
 	printf("\n");
     }
     printf("\n");
@@ -99,7 +90,6 @@ int main(int argc, char *const *argv)
     /* write the PNG output image */
 /*    write_png_u8rgb(argv[4], img, nx, ny, nc); */
     free(img);
-    free(fimg);
 
     return EXIT_SUCCESS;
 }

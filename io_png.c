@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include <png.h>
 
@@ -32,25 +33,19 @@
 #define PNG_SIG_LEN 4
 
 /**
- * @brief read a PNG file into an unsigned char array.
+ * @brief internal function used to read a PNG file into a byte array
  *
- * the array contains the deinterlaced channels.
+ * @todo don't loose 16bit info, and use
+ * - bit_depth = png_get_bit_depth(png_ptr, info_ptr);
  *
  * @param fname PNG file name 
- * @param nx, ny, nc pointers to variables filled with the number of
+ * @param nx, ny, nc pointers to variables to be fill with the number of
  *        columns, lines and channels of the image
- * @return pointer to an allocated float array of image pixel values,
+ * @return pointer to an allocated array of pixels,
  *         or NULL if an error happens
- *
- * @todo better deinterlacing loop
- * @todo keep original channels
- * @todo don't loose 16bit info, and use
- * - rowbytes = png_get_rowbytes(png_ptr, info_ptr);
- * - bit_depth = png_get_bit_depth(png_ptr, info_ptr);
  */
-unsigned char *read_png_any2u8(char *fname,
-			       size_t *nx, size_t *ny,
-			       unsigned char *nc)
+static png_byte *read_png_byte(const char *fname,
+			       size_t *nx, size_t *ny, unsigned char *nc)
 {
     png_byte png_sig[PNG_SIG_LEN];
     png_structp png_ptr;
@@ -61,9 +56,16 @@ unsigned char *read_png_any2u8(char *fname,
     png_bytep row_ptr;
     int png_transform = 0;
     FILE *fp;
-    unsigned char *data=NULL;
-    unsigned char *data_ptr;
+    png_byte *data=NULL;
+    png_byte *data_ptr;
     size_t i, j, k;
+
+    /* parameters check */
+    if (NULL == fname
+	|| NULL == nx
+	|| NULL == ny
+	|| NULL == nc)
+	return NULL;
 
     /* open the PNG file */
     if (NULL == (fp = fopen(fname, "rb")))
@@ -132,8 +134,8 @@ unsigned char *read_png_any2u8(char *fname,
     row_pointers = png_get_rows(png_ptr, info_ptr);
 
     /* allocate the data RGB array */
-    if (NULL == (data = (unsigned char *)malloc(width * height * channels
-						* sizeof(unsigned char))))
+    if (NULL == (data = (png_byte *)malloc(width * height * channels
+						* sizeof(png_byte))))
     {
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 	fclose(fp);
@@ -156,7 +158,7 @@ unsigned char *read_png_any2u8(char *fname,
 	    for (i=0; i<width; i++)
 	    {
 		/* pixel loop */
-		*data_ptr++ = (unsigned char) *row_ptr;
+		*data_ptr++ = *row_ptr;
 		row_ptr += channels;
 	    }
 	}
@@ -172,10 +174,79 @@ unsigned char *read_png_any2u8(char *fname,
     *nx = (size_t) width;
     *ny = (size_t) height;
     *nc = (size_t) channels;
+    
     return data;
 }
 
+/**
+ * @brief read a PNG file into a 32bit float array
+ *
+ * The array contains the deinterlaced channels.
+ * 1, 2, 4 and 8bit images are converted to float values
+ * between 0. and 1., 3., 15. or 255.
+ * 16bit images are also downscaled to 8bit before conversion.
+ *
+ * @param fname PNG file name 
+ * @param nx, ny, nc pointers to variables to be filled with the number of
+ *        columns, lines and channels of the image
+ * @return pointer to an allocated unsigned char array of pixels,
+ *         or NULL if an error happens
+ */
+unsigned char *read_png_u8(const char *fname,
+			   size_t *nx, size_t *ny, unsigned char *nc)
+{
+    /* 
+     * png_bytes are same as unsigned chars,
+     * so a simple cast is enough.
+     * but check, just in case...
+     */
+    assert (sizeof(png_byte) == sizeof(unsigned char));
+    return (unsigned char *)read_png_byte(fname, nx, ny, nc);
+}
 
+/**
+ * @brief read a PNG file into a 8bit integer array
+ *
+ * The array contains the deinterlaced channels.
+ * 1, 2 and 4bit images are converted to 8bit.
+ * 16bit images are previously downscaled to 8bit.
+ *
+ * @todo don't downscale 16bit images.
+ *
+ * @param fname PNG file name 
+ * @param nx, ny, nc pointers to variables to be filled with the number of
+ *        columns, lines and channels of the image
+ * @return pointer to an allocated unsigned char array of pixels,
+ *         or NULL if an error happens
+ */
+float *read_png_f32(const char *fname,
+		    size_t *nx, size_t *ny, unsigned char *nc)
+{
+    png_byte *data_byte, *byte_ptr, *byte_end;
+    float *data_flt, *flt_ptr;
+    size_t size;
+
+    /* read the image as bytes */
+    if (NULL == (data_byte = read_png_byte(fname, nx, ny, nc)))
+	return NULL;
+
+    /* allocate the float array */
+    size = *nx * *ny * *nc;
+    if (NULL == (data_flt = (float *)malloc(size * sizeof(float))))
+    {
+	free(data_byte);
+	return NULL;
+    }
+
+    /* convert */
+    byte_ptr = data_byte;
+    byte_end = byte_ptr + size;
+    flt_ptr = data_flt;
+    while (byte_ptr < byte_end)
+	*flt_ptr++ = (float) *byte_ptr++;
+
+    return data_flt;
+}
 
 
 
