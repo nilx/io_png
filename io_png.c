@@ -46,23 +46,24 @@
  * @todo keep original channels
  * @todo don't loose 16bit info, and use
  * - rowbytes = png_get_rowbytes(png_ptr, info_ptr);
- * - channels = png_get_channels(png_ptr, info_ptr);
  * - bit_depth = png_get_bit_depth(png_ptr, info_ptr);
  */
-unsigned char *read_png_any2u8rgb(char *fname,
-				  size_t *nx, size_t *ny, size_t *nc)
+unsigned char *read_png_any2u8(char *fname,
+			       size_t *nx, size_t *ny,
+			       unsigned char *nc)
 {
     png_byte png_sig[PNG_SIG_LEN];
     png_structp png_ptr;
     png_infop info_ptr;
     png_uint_32 width, height;
+    png_byte channels;
     png_bytepp row_pointers;
-    png_bytep ptr_pxl;
+    png_bytep row_ptr;
     int png_transform = 0;
     FILE *fp;
     unsigned char *data=NULL;
-    unsigned char *ptr_r, *ptr_g, *ptr_b;
-    size_t i, j;
+    unsigned char *data_ptr;
+    size_t i, j, k;
 
     /* open the PNG file */
     if (NULL == (fp = fopen(fname, "rb")))
@@ -115,16 +116,11 @@ unsigned char *read_png_any2u8rgb(char *fname,
      * set the read filter transforms, to get 8bit RGB whatever the
      * original file may contain:
      * PNG_TRANSFORM_STRIP_16      strip 16-bit samples to 8 bits
-     * PNG_TRANSFORM_STRIP_ALPHA   discard the alpha channel
      * PNG_TRANSFORM_PACKING       expand 1, 2 and 4-bit
      *                             samples to bytes
-     * PNG_TRANSFORM_GRAY_TO_RGB   expand grayscale samples
-     *                             to RGB (or GA to RGBA)
      */
     png_transform = (PNG_TRANSFORM_STRIP_16
-		     | PNG_TRANSFORM_STRIP_ALPHA
-		     | PNG_TRANSFORM_PACKING
-		     | PNG_TRANSFORM_GRAY_TO_RGB);
+		     | PNG_TRANSFORM_PACKING);
 
     /* read in the entire image at once */
     png_read_png(png_ptr, info_ptr, png_transform, NULL);
@@ -132,33 +128,37 @@ unsigned char *read_png_any2u8rgb(char *fname,
     /* get image informations */
     width = png_get_image_width(png_ptr, info_ptr);
     height = png_get_image_height(png_ptr, info_ptr);
+    channels = png_get_channels(png_ptr, info_ptr);
     row_pointers = png_get_rows(png_ptr, info_ptr);
 
     /* allocate the data RGB array */
-    if (NULL == (data = (unsigned char *)malloc(3 * width * height
+    if (NULL == (data = (unsigned char *)malloc(width * height * channels
 						* sizeof(unsigned char))))
     {
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 	fclose(fp);
         return NULL;
     }
-    /* set the red, green and blue areas */
-    ptr_r = data;
-    ptr_g = ptr_r + width * height;
-    ptr_b = ptr_g + width * height;
 
-    /* deinterlace and convert png RGB RGB RGB 8bit to RRR GGG BBB */
-    /* TODO: pure vector loop? */
-    for (j=0; j<height; j++)
+    /*
+     * deinterlace and convert png RGB RGB RGB 8bit to RRR GGG BBB
+     * the image is deinterlaced layer after layer
+     * this involved more memory exchange, but allows a generic loop
+     */
+    for (k=0; k<channels; k++)
     {
-	/* row loop */
-	ptr_pxl = row_pointers[j];
-	for (i=0; i<width; i++)
+	/* channel loop */
+	data_ptr = data + (size_t) (width * height * k);
+	for (j=0; j<height; j++)
 	{
-	    /* pixel loop */
-	    *ptr_r++ = (unsigned char) *ptr_pxl++;
-	    *ptr_g++ = (unsigned char) *ptr_pxl++;
-	    *ptr_b++ = (unsigned char) *ptr_pxl++;
+	    /* row loop */
+	    row_ptr = row_pointers[j] + k;
+	    for (i=0; i<width; i++)
+	    {
+		/* pixel loop */
+		*data_ptr++ = (unsigned char) *row_ptr;
+		row_ptr += channels;
+	    }
 	}
     }
 
@@ -171,7 +171,7 @@ unsigned char *read_png_any2u8rgb(char *fname,
     /* update the size pointers and return the data pointer */
     *nx = (size_t) width;
     *ny = (size_t) height;
-    *nc = (size_t) 3;
+    *nc = (size_t) channels;
     return data;
 }
 

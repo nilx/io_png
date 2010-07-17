@@ -40,9 +40,10 @@ int main(int argc, char *const *argv)
 {
     unsigned char *img, *img_ptr, *img_end;
     float *fimg, *fimg_ptr;
-    size_t nx, ny, nc;
+    size_t nx, ny;
+    unsigned char nc;
     float a, b;
-    size_t i;
+    size_t i, k;
 
     /* "-v" option : version info */
     if (2 <= argc && 0 == strcmp("-v", argv[1]))
@@ -64,7 +65,7 @@ int main(int argc, char *const *argv)
     b = atof(argv[3]);
 
     /* read the PNG input image */
-    img = read_png_any2u8rgb(argv[2], &nx, &ny, &nc);
+    img = read_png_any2u8(argv[2], &nx, &ny, &nc);
 
     /* convert to float */
     img_ptr = img;
@@ -74,30 +75,26 @@ int main(int argc, char *const *argv)
     while (img_ptr < img_end)
 	*fimg_ptr++ = (float) *img_ptr++;
 
-    printf("R : ");
-    for (i=0; i<nx*ny; i++)
-	printf("%i ", (int) fimg[i]);
-    printf("\nG : ");
-    for (i=nx*ny; i<2*nx*ny; i++)
-	printf("%i ", (int) fimg[i]);
-    printf("\nB : ");
-    for (i=2*nx*ny; i<3*nx*ny; i++)
-	printf("%i ", (int) fimg[i]);
-    printf("\n\n");
+    for (k=0; k<nc; k++)
+    {
+	printf("%i : ", (int) k);
+	for (i=k*nx*ny; i<(k+1)*nx*ny; i++)
+	    printf("%i ", (int) fimg[i]);
+	printf("\n");
+    }
+    printf("\n");
 
     /* transform the data */
     axpb(fimg, nx * ny * nc, a, b);
 
-    printf("R : ");
-    for (i=0; i<nx*ny; i++)
-	printf("%i ", (int) fimg[i]);
-    printf("\nG : ");
-    for (i=nx*ny; i<2*nx*ny; i++)
-	printf("%i ", (int) fimg[i]);
-    printf("\nB : ");
-    for (i=2*nx*ny; i<3*nx*ny; i++)
-	printf("%i ", (int) fimg[i]);
-    printf("\n\n");
+    for (k=0; k<nc; k++)
+    {
+	printf("%i : ", (int) k);
+	for (i=k*nx*ny; i<(k+1)*nx*ny; i++)
+	    printf("%i ", (int) fimg[i]);
+	printf("\n");
+    }
+    printf("\n");
 
     /* write the PNG output image */
 /*    write_png_u8rgb(argv[4], img, nx, ny, nc); */
