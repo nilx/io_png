@@ -14,21 +14,12 @@ BIN	= axpb
 
 default: $(BIN)
 
-#include makefile.libs
-
 COPT	= -O3 -funroll-loops -fomit-frame-pointer
 CFLAGS	+= -ansi -pedantic -Wall -Wextra -Werror $(COPT)
 LDFLAGS += -lpng
 
-# optional settings
-ifdef VECTOR
-COPT	+= -msse2 -ffast-math
-endif
-
-# optional settings
-ifdef VERBOSE
-CFLAGS	+= -ftree-vectorizer-verbose=1
-endif
+# local options
+-include makefile.local
 
 %.h	: %.c
 	cproto $< > $@
