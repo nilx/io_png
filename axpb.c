@@ -54,7 +54,7 @@ int main(int argc, char *const *argv)
     /* wrong number of parameters : simple help info */
     if (5 != argc)
     {
-        fprintf(stderr, "usage  : %s a in.tiff b out.tiff\n", argv[0]);
+        fprintf(stderr, "usage  : %s a in.png b out.png\n", argv[0]);
         fprintf(stderr, "         a, b  : numerical parameters\n");
         fprintf(stderr, "result : out = a * in + b\n");
         return EXIT_FAILURE;
@@ -63,7 +63,7 @@ int main(int argc, char *const *argv)
     a = atof(argv[1]);
     b = atof(argv[3]);
 
-    /* read the TIFF input image */
+    /* read the PNG input image */
     img = read_png_any2u8rgb(argv[2], &nx, &ny, &nc);
 
     /* convert to float */

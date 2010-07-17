@@ -57,12 +57,12 @@ unsigned char *read_png_any2u8rgb(char *fname,
     png_infop info_ptr;
     png_uint_32 width, height;
     png_bytepp row_pointers;
-    png_bytep row;
+    png_bytep ptr_pxl;
     int png_transform = 0;
     FILE *fp;
     unsigned char *data=NULL;
-    unsigned char *data_r, *data_g, *data_b;
-    size_t i=0, j=0;
+    unsigned char *ptr_r, *ptr_g, *ptr_b;
+    size_t i, j;
 
     /* open the PNG file */
     if (NULL == (fp = fopen(fname, "rb")))
@@ -143,19 +143,22 @@ unsigned char *read_png_any2u8rgb(char *fname,
         return NULL;
     }
     /* set the red, green and blue areas */
-    data_r = data;
-    data_g = data_r + width * height;
-    data_b = data_g + width * height;
+    ptr_r = data;
+    ptr_g = ptr_r + width * height;
+    ptr_b = ptr_g + width * height;
 
-    /* deinterlace and convert png RGB RGB RGB 8bit to RRR GGG BBB float */
-    for (j = 0; j < height; j++)
+    /* deinterlace and convert png RGB RGB RGB 8bit to RRR GGG BBB */
+    /* TODO: pure vector loop? */
+    for (j=0; j<height; j++)
     {
-	row = row_pointers[j];
-	for (i = 0; i < width; i++)
+	/* row loop */
+	ptr_pxl = row_pointers[j];
+	for (i=0; i<width; i++)
 	{
-	    data_r[width * j + i] = (unsigned char) row[3 * i];
-	    data_g[width * j + i] = (unsigned char) row[3 * i + 1];
-	    data_b[width * j + i] = (unsigned char) row[3 * i + 2];
+	    /* pixel loop */
+	    *ptr_r++ = (unsigned char) *ptr_pxl++;
+	    *ptr_g++ = (unsigned char) *ptr_pxl++;
+	    *ptr_b++ = (unsigned char) *ptr_pxl++;
 	}
     }
 
