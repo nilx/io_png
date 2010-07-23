@@ -31,7 +31,7 @@
 #include "io_png.h"
 #include "axpb_lib.h"
 
-#define VERSION "0.01"
+#define VERSION "0.20100723"
 
 /**
  * @brief main function call
@@ -39,10 +39,8 @@
 int main(int argc, char *const *argv)
 {
     float *img;
-    size_t nx, ny;
-    unsigned char nc;
-    float a, b;
-    size_t i, k;
+    size_t nx=0, ny=0, nc=0;
+    double a, b;
 
     /* "-v" option : version info */
     if (2 <= argc && 0 == strcmp("-v", argv[1]))
@@ -66,29 +64,13 @@ int main(int argc, char *const *argv)
     /* read the PNG input image */
     img = read_png_f32(argv[2], &nx, &ny, &nc);
 
-    for (k=0; k<nc; k++)
-    {
-	printf("%i : ", (int) k);
-	for (i=k*nx*ny; i<(k+1)*nx*ny; i++)
-	    printf("%i ", (int) img[i]);
-	printf("\n");
-    }
-    printf("\n");
-
     /* transform the data */
     axpb(img, nx * ny * nc, a, b);
 
-    for (k=0; k<nc; k++)
-    {
-	printf("%i : ", (int) k);
-	for (i=k*nx*ny; i<(k+1)*nx*ny; i++)
-	    printf("%i ", (int) img[i]);
-	printf("\n");
-    }
-    printf("\n");
-
     /* write the PNG output image */
-/*    write_png_u8rgb(argv[4], img, nx, ny, nc); */
+    write_png_f32(argv[4], img, nx, ny, nc);
+
+    /* free the memory */
     free(img);
 
     return EXIT_SUCCESS;

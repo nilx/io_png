@@ -6,32 +6,40 @@
 # the copyright notice and this notice are preserved.  This file is
 # offered as-is, without any warranty.
 
+# source code, C language
 CSRC	= io_png.c axpb_lib.c axpb.c
 
+# source code, all languages (only C here)
 SRC	= $(CSRC)
+# object files (partial compilation)
 OBJ	= $(CSRC:.c=.o)
+# binary executable program
 BIN	= axpb
 
+# default target : the binary executable program
 default: $(BIN)
 
-COPT	= -O3 -funroll-loops -fomit-frame-pointer
-CFLAGS	+= -ansi -pedantic -Wall -Wextra -Werror $(COPT)
-LDFLAGS += -lpng
+# standard C compiler optimization options
+COPT	= -O2 -funroll-loops -fomit-frame-pointer
+# complete C compiler options
+CFLAGS	= -ansi -pedantic -Wall -Wextra -Werror -pipe $(COPT)
 
-# local options
+# optional local options
 -include makefile.local
 
-%.h	: %.c
-	cproto $< > $@
-
+# partial C compilation xxx.c -> xxx.o
 %.o	: %.c
 	$(CC) $< -c $(CFLAGS) -o $@
 
-axpb	: axpb.o axpb_lib.o io_png.o
-	$(CC) $^ $(LDFLAGS) -o $@ 
+# final link of the partially compiled files
+# (LIBDEPS is for optional library dependencies)
+axpb	: $(OBJ) $(LIBDEPS)
+	$(CC) $(OBJ) $(LDFLAGS) -o $@
 
+# cleanup
 .PHONY	: clean distclean
 clean	:
 	$(RM) $(OBJ)
+	$(RM) *.flag
 distclean	: clean
 	$(RM) $(BIN)

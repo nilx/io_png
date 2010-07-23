@@ -8,8 +8,9 @@
 # This makefile imports and compiles libraries libraries
 # for local use in static form
 
-LIB_DIR	= lib
-INC_DIR	= include
+DEST_DIR = build
+LIB_DIR	= $(DEST_DIR)/lib
+INC_DIR	= $(DEST_DIR)/include
 
 ZLIB_LIB	= $(LIB_DIR)/libz.a
 ZLIB_INC	= $(addprefix $(INC_DIR)/, zlib.h zconf.h)
@@ -57,7 +58,7 @@ default	: all
 all	: zlib libpng libtiff libjpeg
 
 $(LIB_DIR) $(INC_DIR)	:
-	mkdir $@
+	mkdir -p $@
 $(LIB_DIR)/% $(INC_DIR)/%	:
 	cp $(filter %.h %.a, $^) $@
 
@@ -189,4 +190,4 @@ distclean	: clean
 	$(RM) $(LIBPNG_ARC)
 	$(RM) $(LIBJPEG_ARC)
 	$(RM) $(LIBTIFF_ARC)
-	$(RM) -r $(LIB_DIR) $(INC_DIR)
+	$(RM) -r $(DEST_DIR)
