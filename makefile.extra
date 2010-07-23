@@ -1,0 +1,70 @@
+# Copyright 2010 IPOL Image Processing On Line http://www.ipol.im/
+# Author: Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
+#
+# Copying and distribution of this file, with or without
+# modification, are permitted in any medium without royalty provided
+# the copyright notice and this notice are preserved.  This file is
+# offered as-is, without any warranty.
+
+# use a cached compiler
+CC	  = ccache cc
+
+# local library files locations
+LIBDIR = ./libs/build/lib
+INCDIR = ./libs/build/include
+
+COPT += -march=pentium-m -msse3 -ffast-math
+
+ifdef VECTOR
+# automatic vectorization
+CFLAGS	+= -ftree-vectorize
+endif
+
+ifdef VERBOSE
+# verbose compilation
+CFLAGS	+= -ftree-vectorizer-verbose=2
+endif
+
+ifdef DEBUG
+# debugging, with electricfence
+CFLAGS	= -O0 -g -lefence
+endif
+
+ifdef LOCAL_LIBS
+# use local embedded libraries
+LIBDEPS += libpng
+CFLAGS 	+= -I$(INCDIR) -D_LOCAL_LIBS
+LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
+endif
+
+# sopurce documentation
+srcdoc	:
+	doxygen doxygen.conf
+
+# build the png library
+.PHONY	: libpng
+libpng	:
+	$(MAKE) -C libs libpng
+
+# check the source code
+.PHONY	: lint
+lint	: lint.flag
+lint.flag	: $(CSRC)
+	splint -weak $?
+	touch $@
+
+# update the C headers
+%.h	: %.c
+	cproto $< > $@
+
+# vcleanup the source code
+.PHONY	: beautify
+beautify	: beautify.flag
+beautify.flag	: $(CSRC)
+	for FILE in $?; do \
+		expand $$FILE | sed 's/[ \t]*$$//' > $$FILE.$$$$ \
+		&& indent -kr -bl -bli0 -i4 -l78 -nut -nce -sob -sc \
+			$$FILE.$$$$ -o $$FILE \
+		&& rm $$FILE.$$$$; \
+	done
+
