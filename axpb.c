@@ -54,7 +54,7 @@ int main(int argc, char *const *argv)
     {
         fprintf(stderr, "usage  : %s a in.png b out.png\n", argv[0]);
         fprintf(stderr, "         a, b  : numerical parameters\n");
-        fprintf(stderr, "result : out = a * in + b\n");
+        fprintf(stderr, "result : a * in + b -> out\n");
         return EXIT_FAILURE;
     }
 

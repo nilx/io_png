@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* ensure consistency */
 #include "axpb_lib.h"
 
 /**

@@ -23,9 +23,10 @@ default: $(BIN)
 COPT	= -O2 -funroll-loops -fomit-frame-pointer
 # complete C compiler options
 CFLAGS	= -ansi -pedantic -Wall -Wextra -Werror -pipe $(COPT)
+LDFLAGS	= -lpng -lm
 
-# optional local options
--include makefile.local
+# optional makefile config
+-include makefile.extra
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c
@@ -40,6 +41,5 @@ axpb	: $(OBJ) $(LIBDEPS)
 .PHONY	: clean distclean
 clean	:
 	$(RM) $(OBJ)
-	$(RM) *.flag
 distclean	: clean
 	$(RM) $(BIN)

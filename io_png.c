@@ -19,7 +19,14 @@
  * @file io_png.c
  * @brief PNG read-write routines
  *
+ * This is a front-end to libpng, with routines to:
+ * @li read a PNG file as a deinterlaced 8bit integer or float array
+ * @li write a 8bit integer or float array to a PNG file
+ *
+ * Multi-channel images are handled : grey, grey+alpha, rgb and rgb+alpha.
+ *
  * @todo handle stdin/stdout as "-"
+ * @todo handle lossless 16bit data
  *
  * @author Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
  */
@@ -29,6 +36,7 @@
 #include <math.h>
 #include <assert.h>
 
+/* option to use a local version of the libpng */
 #ifdef _LOCAL_LIBS
 #include "png.h"
 #else
