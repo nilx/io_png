@@ -49,15 +49,15 @@
  *
  * @todo don't loose 16bit info
  *
- * @param fname PNG file name 
+ * @param fname PNG file name
  * @param width, height, channels pointers to variables to be filled
  *        with the number of columns, lines and channels of the image
  * @return pointer to an allocated array of pixels,
  *         or NULL if an error happens
  */
 static png_byte *read_png_byte(const char *fname,
-			       png_uint_32 *width, png_uint_32 *height,
-			       png_byte *channels)
+                               png_uint_32 * width, png_uint_32 * height,
+                               png_byte * channels)
 {
     png_byte png_sig[PNG_SIG_LEN];
     png_structp png_ptr;
@@ -72,59 +72,56 @@ static png_byte *read_png_byte(const char *fname,
     size_t i, j, k;
 
     /* parameters check */
-    if (NULL == fname
-	|| NULL == width
-	|| NULL == height
-	|| NULL == channels)
-	return NULL;
+    if (NULL == fname || NULL == width || NULL == height || NULL == channels)
+        return NULL;
 
     /* open the PNG file */
     if (NULL == (fp = fopen(fname, "rb")))
-	return NULL;
+        return NULL;
 
     /* read in some of the signature bytes and check this signature */
     if ((PNG_SIG_LEN != fread(png_sig, 1, PNG_SIG_LEN, fp))
-	|| 0 != png_sig_cmp(png_sig, (png_size_t) 0, PNG_SIG_LEN))
+        || 0 != png_sig_cmp(png_sig, (png_size_t) 0, PNG_SIG_LEN))
     {
-	(void) fclose(fp);
-	return NULL;
+        (void) fclose(fp);
+        return NULL;
     }
-    
-    /* 
+
+    /*
      * create and initialize the png_struct
      * with the default stderr and error handling
      */
     if (NULL == (png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
-						  NULL, NULL, NULL)))
+                                                  NULL, NULL, NULL)))
     {
-	(void) fclose(fp);
-	return NULL;
+        (void) fclose(fp);
+        return NULL;
     }
-    
+
     /* allocate/initialize the memory for image information */
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
     {
-	png_destroy_read_struct(&png_ptr, NULL, NULL);
-	(void) fclose(fp);
-	return NULL;
+        png_destroy_read_struct(&png_ptr, NULL, NULL);
+        (void) fclose(fp);
+        return NULL;
     }
-    
+
     /* set error handling */
     if (0 != setjmp(png_jmpbuf(png_ptr)))
     {
-	/* free all of the memory associated with the png_ptr and info_ptr */
-	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-	(void) fclose(fp);
-	/* If we get here, we had a problem reading the file */
-	return NULL;
+        /* free all of the memory associated with the png_ptr and info_ptr */
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        (void) fclose(fp);
+        /* If we get here, we had a problem reading the file */
+        return NULL;
     }
-    
+
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
-    
+
     /* let libpng know that some bytes have been read */
     png_set_sig_bytes(png_ptr, PNG_SIG_LEN);
-    
+
     /*
      * set the read filter transforms, to get 8bit RGB whatever the
      * original file may contain:
@@ -132,8 +129,7 @@ static png_byte *read_png_byte(const char *fname,
      * PNG_TRANSFORM_PACKING       expand 1, 2 and 4-bit
      *                             samples to bytes
      */
-    transform = (PNG_TRANSFORM_STRIP_16
-		 | PNG_TRANSFORM_PACKING);
+    transform = (PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING);
 
     /* read in the entire image at once */
     png_read_png(png_ptr, info_ptr, transform, NULL);
@@ -146,10 +142,10 @@ static png_byte *read_png_byte(const char *fname,
 
     /* allocate the data RGB array */
     size = *width * *height * *channels;
-    if (NULL == (data = (png_byte *)malloc(size * sizeof(png_byte))))
+    if (NULL == (data = (png_byte *) malloc(size * sizeof(png_byte))))
     {
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-	fclose(fp);
+        fclose(fp);
         return NULL;
     }
 
@@ -158,27 +154,27 @@ static png_byte *read_png_byte(const char *fname,
      * the image is deinterlaced layer after layer
      * this involved more memory exchange, but allows a generic loop
      */
-    for (k=0; k<*channels; k++)
+    for (k = 0; k < *channels; k++)
     {
-	/* channel loop */
-	data_ptr = data + (size_t) (*width * *height * k);
-	for (j=0; j<*height; j++)
-	{
-	    /* row loop */
-	    row_ptr = row_pointers[j] + k;
-	    for (i=0; i<*width; i++)
-	    {
-		/* pixel loop */
-		*data_ptr++ = *row_ptr;
-		row_ptr += *channels;
-	    }
-	}
+        /* channel loop */
+        data_ptr = data + (size_t) (*width * *height * k);
+        for (j = 0; j < *height; j++)
+        {
+            /* row loop */
+            row_ptr = row_pointers[j] + k;
+            for (i = 0; i < *width; i++)
+            {
+                /* pixel loop */
+                *data_ptr++ = *row_ptr;
+                row_ptr += *channels;
+            }
+        }
     }
 
     /* clean up and free any memory allocated, close the file */
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
     fclose(fp);
-    
+
     return data;
 }
 
@@ -191,35 +187,36 @@ static png_byte *read_png_byte(const char *fname,
  *
  * @todo don't downscale 16bit images.
  *
- * @param fname PNG file name 
+ * @param fname PNG file name
  * @param nx, ny, nc pointers to variables to be filled with the number of
  *        columns, lines and channels of the image
  * @return pointer to an allocated unsigned char array of pixels,
  *         or NULL if an error happens
  */
 unsigned char *read_png_u8(const char *fname,
-			   size_t *nx, size_t *ny, size_t *nc)
+                           size_t * nx, size_t * ny, size_t * nc)
 {
-    png_byte *data_byte=NULL;
+    png_byte *data_byte = NULL;
     png_uint_32 width, height;
     png_byte channels;
 
     /* read the image as bytes */
-    if (NULL == (data_byte = read_png_byte(fname, &width, &height, &channels)))
-	return NULL;
+    if (NULL ==
+        (data_byte = read_png_byte(fname, &width, &height, &channels)))
+        return NULL;
 
-    *nx = (size_t)width;
-    *ny = (size_t)height;
-    *nc = (size_t)channels;
-    
-    /* 
+    *nx = (size_t) width;
+    *ny = (size_t) height;
+    *nc = (size_t) channels;
+
+    /*
      * png_bytes are same as unsigned chars,
      * so a simple cast is enough.
      * but check, just in case...
      */
-    assert (sizeof(png_byte) == sizeof(unsigned char));
+    assert(sizeof(png_byte) == sizeof(unsigned char));
 
-    return (unsigned char *)data_byte;
+    return (unsigned char *) data_byte;
 }
 
 /**
@@ -236,29 +233,29 @@ unsigned char *read_png_u8(const char *fname,
  * @return pointer to an allocated unsigned char array of pixels,
  *         or NULL if an error happens
  */
-float *read_png_f32(const char *fname,
-		    size_t *nx, size_t *ny, size_t *nc)
+float *read_png_f32(const char *fname, size_t * nx, size_t * ny, size_t * nc)
 {
-    png_byte *data_byte=NULL, *byte_ptr=NULL, *byte_end=NULL;
-    float *data_flt=NULL, *flt_ptr=NULL;
+    png_byte *data_byte = NULL, *byte_ptr = NULL, *byte_end = NULL;
+    float *data_flt = NULL, *flt_ptr = NULL;
     png_uint_32 width, height;
     png_byte channels;
     size_t size;
 
     /* read the image as bytes */
-    if (NULL == (data_byte = read_png_byte(fname, &width, &height, &channels)))
-	return NULL;
+    if (NULL ==
+        (data_byte = read_png_byte(fname, &width, &height, &channels)))
+        return NULL;
 
-    *nx = (size_t)width;
-    *ny = (size_t)height;
-    *nc = (size_t)channels;
+    *nx = (size_t) width;
+    *ny = (size_t) height;
+    *nc = (size_t) channels;
 
     /* allocate the float array */
     size = *nx * *ny * *nc;
-    if (NULL == (data_flt = (float *)malloc(size * sizeof(float))))
+    if (NULL == (data_flt = (float *) malloc(size * sizeof(float))))
     {
-	free(data_byte);
-	return NULL;
+        free(data_byte);
+        return NULL;
     }
 
     /* convert */
@@ -266,7 +263,7 @@ float *read_png_f32(const char *fname,
     byte_end = byte_ptr + size;
     flt_ptr = data_flt;
     while (byte_ptr < byte_end)
-	*flt_ptr++ = (float) *byte_ptr++;
+        *flt_ptr++ = (float) *byte_ptr++;
 
     free(data_byte);
     return data_flt;
@@ -285,110 +282,110 @@ float *read_png_f32(const char *fname,
  *
  * @todo handle 16bit
  *
- * @param fname PNG file name 
+ * @param fname PNG file name
  * @param data deinterlaced (RRRGGGBBBAAA) image byte array
  * @param width, height, channels number of columns, lines and channels
  * @return 0 if everything OK, -1 if an error occured
  */
-static int write_png_byte(const char *fname, const png_byte *data,
-			  png_uint_32 width, png_uint_32 height,
-			  png_byte channels)
+static int write_png_byte(const char *fname, const png_byte * data,
+                          png_uint_32 width, png_uint_32 height,
+                          png_byte channels)
 {
     FILE *fp;
     png_structp png_ptr;
     png_infop info_ptr;
-    const png_byte *data_ptr=NULL;
-    png_byte *idata=NULL, *idata_ptr=NULL;
-    png_bytep *row_pointers=NULL;
+    const png_byte *data_ptr = NULL;
+    png_byte *idata = NULL, *idata_ptr = NULL;
+    png_bytep *row_pointers = NULL;
     png_byte bit_depth;
     int color_type, interlace, compression, filter;
     size_t size;
     size_t i, j, k;
 
     /* parameters check */
-    if (NULL == fname
-	|| NULL == data)
-	return -1;
+    if (NULL == fname || NULL == data)
+        return -1;
 
     /* open the PNG file */
     if (NULL == (fp = fopen(fname, "wb")))
-	return -1;
+        return -1;
 
     /* allocate the interlaced array and row pointers */
     size = width * height * channels;
-    if (NULL == (idata = (png_byte *)malloc(size * sizeof(png_byte))))
+    if (NULL == (idata = (png_byte *) malloc(size * sizeof(png_byte))))
     {
-	fclose(fp);
+        fclose(fp);
         return -1;
     }
 
-    if (NULL == (row_pointers = (png_bytep *)malloc(height * sizeof(png_bytep))))
+    if (NULL ==
+        (row_pointers = (png_bytep *) malloc(height * sizeof(png_bytep))))
     {
-	free(idata);
-	fclose(fp);
+        free(idata);
+        fclose(fp);
         return -1;
     }
 
-    /* 
+    /*
      * create and initialize the png_struct
      * with the default stderr and error handling
      */
     if (NULL == (png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-						  NULL, NULL, NULL)))
+                                                   NULL, NULL, NULL)))
     {
-	free(row_pointers);
-	free(idata);
-	(void) fclose(fp);
-	return -1;
+        free(row_pointers);
+        free(idata);
+        (void) fclose(fp);
+        return -1;
     }
-    
+
     /* allocate/initialize the memory for image information */
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
     {
-	png_destroy_read_struct(&png_ptr, NULL, NULL);
-	free(row_pointers);
-	free(idata);
-	(void) fclose(fp);
-	return -1;
+        png_destroy_read_struct(&png_ptr, NULL, NULL);
+        free(row_pointers);
+        free(idata);
+        (void) fclose(fp);
+        return -1;
     }
-    
+
     /* set error handling */
     if (0 != setjmp(png_jmpbuf(png_ptr)))
     {
-	/* free all of the memory associated with the png_ptr and info_ptr */
-	png_destroy_write_struct(&png_ptr, &info_ptr);
-	free(row_pointers);
-	free(idata);
-	(void) fclose(fp);
-	/* If we get here, we had a problem reading the file */
-	return -1;
+        /* free all of the memory associated with the png_ptr and info_ptr */
+        png_destroy_write_struct(&png_ptr, &info_ptr);
+        free(row_pointers);
+        free(idata);
+        (void) fclose(fp);
+        /* If we get here, we had a problem reading the file */
+        return -1;
     }
-    
+
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
-    
+
     /* set image informations */
     bit_depth = 8;
     switch (channels)
     {
     case 1:
-	color_type = PNG_COLOR_TYPE_GRAY;
-	break;
+        color_type = PNG_COLOR_TYPE_GRAY;
+        break;
     case 2:
-	color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
-	break;
+        color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
+        break;
     case 3:
-	color_type = PNG_COLOR_TYPE_RGB;
-	break;
+        color_type = PNG_COLOR_TYPE_RGB;
+        break;
     case 4:
-	color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-	break;
+        color_type = PNG_COLOR_TYPE_RGB_ALPHA;
+        break;
     default:
-	png_destroy_read_struct(&png_ptr, NULL, NULL);
-	free(row_pointers);
-	free(idata);
-	(void) fclose(fp);
-	return -1;
+        png_destroy_read_struct(&png_ptr, NULL, NULL);
+        free(row_pointers);
+        free(idata);
+        (void) fclose(fp);
+        return -1;
     }
     interlace = PNG_INTERLACE_ADAM7;
     compression = PNG_COMPRESSION_TYPE_BASE;
@@ -396,7 +393,7 @@ static int write_png_byte(const char *fname, const png_byte *data,
 
     /* set image header */
     png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth, color_type,
-		 interlace, compression, filter);
+                 interlace, compression, filter);
     /* TODO : significant bit (sBIT), gamma (gAMA), comments (text) chunks */
     png_write_info(png_ptr, info_ptr);
 
@@ -405,25 +402,25 @@ static int write_png_byte(const char *fname, const png_byte *data,
      * the image is interlaced layer after layer
      * this involved more memory exchange, but allows a generic loop
      */
-    for (k=0; k<channels; k++)
+    for (k = 0; k < channels; k++)
     {
-	/* channel loop */
-	data_ptr = data + (size_t) (width * height * k);
-	idata_ptr = idata + (size_t) k;
-	for (j=0; j<height; j++)
-	{
-	    /* row loop */
-	    for (i=0; i<width; i++)
-	    {
-		/* pixel loop */
-		*idata_ptr = *data_ptr++;
-		idata_ptr += channels;
-	    }
-	}
+        /* channel loop */
+        data_ptr = data + (size_t) (width * height * k);
+        idata_ptr = idata + (size_t) k;
+        for (j = 0; j < height; j++)
+        {
+            /* row loop */
+            for (i = 0; i < width; i++)
+            {
+                /* pixel loop */
+                *idata_ptr = *data_ptr++;
+                idata_ptr += channels;
+            }
+        }
     }
     /* set row pointers */
-    for (j=0; j<height; j++)
-	row_pointers[j] = idata + (size_t) (channels * width * j);
+    for (j = 0; j < height; j++)
+        row_pointers[j] = idata + (size_t) (channels * width * j);
 
     /* write out the entire image and end it */
     png_write_image(png_ptr, row_pointers);
@@ -441,50 +438,50 @@ static int write_png_byte(const char *fname, const png_byte *data,
 /**
  * @brief write a 8bit unsigned integer array into a PNG file
  *
- * @param fname PNG file name 
+ * @param fname PNG file name
  * @param data array to write
  * @param nx, ny, nc number of columns, lines and channels of the image
  * @return 0 if everything OK, -1 if an error occured
  */
 int write_png_u8(const char *fname, const unsigned char *data,
-		 size_t nx, size_t ny, size_t nc)
+                 size_t nx, size_t ny, size_t nc)
 {
-    /* 
+    /*
      * png_bytes are same as unsigned chars,
      * so a simple cast is enough.
      * but check, just in case...
      */
-    assert (sizeof(png_byte) == sizeof(unsigned char));
+    assert(sizeof(png_byte) == sizeof(unsigned char));
 
-    return write_png_byte(fname, (png_byte*)data,
-			  (png_uint_32)nx, (png_uint_32)ny, (png_byte)nc);
+    return write_png_byte(fname, (png_byte *) data,
+                          (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc);
 }
 
 /**
  * @brief write a float array into a PNG file
  *
  * The float values are rounded to 8bit integers, and bounded to [0, 255].
- * 
+ *
  * @todo handle 16bit images and flexible min/max
  *
- * @param fname PNG file name 
+ * @param fname PNG file name
  * @param data array to write
  * @param nx, ny, nc number of columns, lines and channels of the image
  * @return 0 if everything OK, -1 if an error occured
  */
 int write_png_f32(const char *fname, const float *data,
-		 size_t nx, size_t ny, size_t nc)
+                  size_t nx, size_t ny, size_t nc)
 {
-    png_byte *data_byte=NULL, *byte_ptr=NULL;
-    const float *flt_ptr=NULL, *flt_end=NULL;
+    png_byte *data_byte = NULL, *byte_ptr = NULL;
+    const float *flt_ptr = NULL, *flt_end = NULL;
     size_t size;
     double tmp;
     int retval;
 
     /* allocate the byte array */
     size = nx * ny * nc;
-    if (NULL == (data_byte = (png_byte *)malloc(size * sizeof(png_byte))))
-	return -1;
+    if (NULL == (data_byte = (png_byte *) malloc(size * sizeof(png_byte))))
+        return -1;
 
     /* convert */
     flt_ptr = data;
@@ -492,15 +489,13 @@ int write_png_f32(const char *fname, const float *data,
     byte_ptr = data_byte;
     while (flt_ptr < flt_end)
     {
-	tmp = floor(*flt_ptr++ + .5);
-	*byte_ptr++ = (png_byte) (tmp < 0. ? 0. :
-				  (tmp > 255. ? 255. :
-				   tmp));
+        tmp = floor(*flt_ptr++ + .5);
+        *byte_ptr++ = (png_byte) (tmp < 0. ? 0. : (tmp > 255. ? 255. : tmp));
     }
 
     retval = write_png_byte(fname, data_byte,
-			    (png_uint_32)nx, (png_uint_32)ny, (png_byte)nc);
+                            (png_uint_32) nx, (png_uint_32) ny,
+                            (png_byte) nc);
     free(data_byte);
     return retval;
 }
-

@@ -34,15 +34,14 @@
  * @param size array size
  * @param a, b numerical parameters
  */
-void axpb(float *data, size_t size,
-	  double a, double b)
+void axpb(float *data, size_t size, double a, double b)
 {
     size_t i;
 
     for (i = 0; i < size; i++)
     {
-	data[i] *= a;
-	data[i] += b;
+        data[i] *= a;
+        data[i] += b;
     }
 
     return;

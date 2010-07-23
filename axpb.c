@@ -39,14 +39,14 @@
 int main(int argc, char *const *argv)
 {
     float *img;
-    size_t nx=0, ny=0, nc=0;
+    size_t nx = 0, ny = 0, nc = 0;
     double a, b;
 
     /* "-v" option : version info */
     if (2 <= argc && 0 == strcmp("-v", argv[1]))
     {
-        fprintf(stdout, "%s version " VERSION \
-		", compiled " __DATE__ "\n", argv[0]);
+        fprintf(stdout, "%s version " VERSION
+                ", compiled " __DATE__ "\n", argv[0]);
         return EXIT_SUCCESS;
     }
     /* wrong number of parameters : simple help info */
