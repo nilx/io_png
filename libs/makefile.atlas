@@ -1,0 +1,14 @@
+# Copyright 2010 Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
+#
+# Copying and distribution of this file, with or without
+# modification, are permitted in any medium without royalty provided
+# the copyright notice and this notice are preserved.  This file is
+# offered as-is, without any warranty.
+#
+# This makefile imports and compiles libraries libraries
+# for local use in static form
+
+ATLAS_FILES	=
+ATLAS_DIR 	= ATLAS
+ATLAS_ARC 	= atlas3.8.3.tar.gz
+ATLAS_URL 	= http://sourceforge.net/projects/math-atlas/files/Stable/3.8.3/atlas3.8.3.tar.gz/download
