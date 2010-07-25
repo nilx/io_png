@@ -31,7 +31,7 @@
  * @todo read_png_abort()
  * @todo templates?
  * @todo refactor write like read
- * @todo force read as gray/rgb
+ * @todo force read as gray
  *
  * @author Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
  */
@@ -54,8 +54,8 @@
 #define PNG_SIG_LEN 4
 
 /* internal only datatype identifiers */
-#define IO_PNG_U8  0x0001
-#define IO_PNG_F32 0x0002
+#define IO_PNG_U8  0x0001 /* 8bit unsigned integer */
+#define IO_PNG_F32 0x0002 /* 32bit float */
 
 /*
  * READ
@@ -256,13 +256,24 @@ static void *read_png_raw(const char *fname,
 unsigned char *read_png_u8(const char *fname,
                            size_t * nx, size_t * ny, size_t * nc)
 {
-    unsigned char *data = NULL;
-
     /* read the image as unsigned char */
-    data = (unsigned char *) read_png_raw(fname, nx, ny, nc,
+    return (unsigned char *) read_png_raw(fname, nx, ny, nc,
                                           PNG_TRANSFORM_IDENTITY, IO_PNG_U8);
+}
 
-    return data;
+/**
+ * @brief read a PNG file into a 8bit integer array, converted to RGB
+ *
+ * See read_png_u8() for details.
+ */
+unsigned char *read_png_u8_rgb(const char *fname,
+			       size_t * nx, size_t * ny, size_t * nc)
+{
+    /* read the image as RGB unsigned char */
+    return (unsigned char *) read_png_raw(fname, nx, ny, nc,
+                                          PNG_TRANSFORM_GRAY_TO_RGB
+                                          | PNG_TRANSFORM_STRIP_ALPHA,
+					  IO_PNG_U8);
 }
 
 /**
@@ -281,13 +292,24 @@ unsigned char *read_png_u8(const char *fname,
  */
 float *read_png_f32(const char *fname, size_t * nx, size_t * ny, size_t * nc)
 {
-    float *data = NULL;
-
     /* read the image as float */
-    data = (float *) read_png_raw(fname, nx, ny, nc,
+    return (float *) read_png_raw(fname, nx, ny, nc,
                                   PNG_TRANSFORM_IDENTITY, IO_PNG_F32);
+}
 
-    return data;
+/**
+ * @brief read a PNG file into a 32bit float array, converted to RGB
+ *
+ * See read_png_f32() for details.
+ */
+float *read_png_f32_rgb(const char *fname,
+			size_t * nx, size_t * ny, size_t * nc)
+{
+    /* read the image as RGB float */
+    return (float *) read_png_raw(fname, nx, ny, nc,
+				  PNG_TRANSFORM_GRAY_TO_RGB
+				  | PNG_TRANSFORM_STRIP_ALPHA,
+				  IO_PNG_F32);
 }
 
 /*
