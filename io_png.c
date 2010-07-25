@@ -321,14 +321,14 @@ float *read_png_f32_rgb(const char *fname,
  * @return -1
  */
 static int write_png_abort(FILE * fp,
-			   png_byte * idata, png_bytep * row_pointers,
-			   png_structp * png_ptr_p, png_infop * info_ptr_p)
+                           png_byte * idata, png_bytep * row_pointers,
+                           png_structp * png_ptr_p, png_infop * info_ptr_p)
 {
     png_destroy_write_struct(png_ptr_p, info_ptr_p);
     if (NULL != row_pointers)
-	free(row_pointers);
+        free(row_pointers);
     if (NULL != idata)
-	free(idata);
+        free(idata);
     if (NULL != fp)
         (void) fclose(fp);
     return -1;
@@ -382,10 +382,10 @@ static int write_png_raw(const char *fname, const void *data,
     /* allocate the interlaced array and row pointers */
     size = nx * ny * nc;
     if (NULL == (idata = (png_byte *) malloc(size * sizeof(png_byte))))
-	return write_png_abort(fp, NULL, NULL, NULL, NULL);
+        return write_png_abort(fp, NULL, NULL, NULL, NULL);
 
     if (NULL == (row_pointers = (png_bytep *) malloc(ny * sizeof(png_bytep))))
-	return write_png_abort(fp, idata, NULL, NULL, NULL);
+        return write_png_abort(fp, idata, NULL, NULL, NULL);
 
     /*
      * create and initialize the png_struct
@@ -393,16 +393,16 @@ static int write_png_raw(const char *fname, const void *data,
      */
     if (NULL == (png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                    NULL, NULL, NULL)))
-	return write_png_abort(fp, idata, row_pointers, NULL, NULL);
+        return write_png_abort(fp, idata, row_pointers, NULL, NULL);
 
     /* allocate/initialize the memory for image information */
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
-	return write_png_abort(fp, idata, row_pointers, &png_ptr, NULL);
+        return write_png_abort(fp, idata, row_pointers, &png_ptr, NULL);
 
     /* set error handling */
     if (0 != setjmp(png_jmpbuf(png_ptr)))
         /* if we get here, we had a problem reading the file */
-	return write_png_abort(fp, idata, row_pointers, &png_ptr, &info_ptr);
+        return write_png_abort(fp, idata, row_pointers, &png_ptr, &info_ptr);
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
