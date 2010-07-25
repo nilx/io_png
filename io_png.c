@@ -16,6 +16,13 @@
  */
 
 /**
+ * @mainpage PNG read/write routines
+ *
+ * README_io_png.txt:
+ * @verbinclude README_io_png.txt
+ */
+
+/**
  * @file io_png.c
  * @brief PNG read-write routines
  *
@@ -28,9 +35,7 @@
  * @todo handle stdin/stdout as "-"
  * @todo handle lossless 16bit data
  * @todo test suite
- * @todo read_png_abort()
- * @todo templates?
- * @todo refactor write like read
+ * @todo function pointers for the switched conversions
  * @todo force read as gray
  *
  * @author Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
@@ -54,23 +59,22 @@
 #define PNG_SIG_LEN 4
 
 /* internal only datatype identifiers */
-#define IO_PNG_U8  0x0001 /* 8bit unsigned integer */
-#define IO_PNG_F32 0x0002 /* 32bit float */
+#define IO_PNG_U8  0x0001       /* 8bit unsigned integer */
+#define IO_PNG_F32 0x0002       /* 32bit float */
 
 /*
  * READ
  */
 
 /**
- * @brief internal function used to clanup the memory when
- * png_read_raw fails
+ * @brief internal function used to cleanup the memory when
+ * png_read_raw() fails
  *
  * @param fp file pointer to close, ignored if NULL
  * @param png_ptr_p, info_ptr_p, pointers to PNG structure pointers,
  *        ignored if NULL
  * @return NULL
  */
-
 static void *read_png_abort(FILE * fp,
                             png_structp * png_ptr_p, png_infop * info_ptr_p)
 {
@@ -105,9 +109,9 @@ static void *read_png_raw(const char *fname,
     FILE *fp = NULL;
     void *data = NULL;
     unsigned char *data_u8 = NULL;
-    unsigned char *data_u8_ptr;
+    unsigned char *data_u8_ptr = NULL;
     float *data_f32 = NULL;
-    float *data_f32_ptr;
+    float *data_f32_ptr = NULL;
     size_t size;
     size_t i, j, k;
 
@@ -143,7 +147,6 @@ static void *read_png_raw(const char *fname,
         /* if we get here, we had a problem reading the file */
         /* free all of the memory associated with the png_ptr and info_ptr */
         return read_png_abort(fp, &png_ptr, &info_ptr);
-    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
@@ -169,7 +172,12 @@ static void *read_png_raw(const char *fname,
     *nc = (size_t) png_get_channels(png_ptr, info_ptr);
     row_pointers = png_get_rows(png_ptr, info_ptr);
 
-    /* allocate the output data RGB array */
+    /*
+     * allocate the output data RGB array
+     * deinterlace and convert png RGB RGB RGB 8bit to RRR GGG BBB
+     * the image is deinterlaced layer after layer
+     * this involves more memory exchange, but allows a generic loop
+     */
     size = *nx * *ny * *nc;
     switch (dtype)
     {
@@ -178,22 +186,6 @@ static void *read_png_raw(const char *fname,
                      (unsigned char *) malloc(size * sizeof(unsigned char))))
             return read_png_abort(fp, &png_ptr, &info_ptr);
         data = (void *) data_u8;
-        break;
-    case IO_PNG_F32:
-        if (NULL == (data_f32 = (float *) malloc(size * sizeof(float))))
-            return read_png_abort(fp, &png_ptr, &info_ptr);
-        data = (void *) data_f32;
-        break;
-    }
-
-    /*
-     * deinterlace and convert png RGB RGB RGB 8bit to RRR GGG BBB
-     * the image is deinterlaced layer after layer
-     * this involves more memory exchange, but allows a generic loop
-     */
-    switch (dtype)
-    {
-    case IO_PNG_U8:
         for (k = 0; k < *nc; k++)
         {
             /* channel loop */
@@ -212,6 +204,9 @@ static void *read_png_raw(const char *fname,
         }
         break;
     case IO_PNG_F32:
+        if (NULL == (data_f32 = (float *) malloc(size * sizeof(float))))
+            return read_png_abort(fp, &png_ptr, &info_ptr);
+        data = (void *) data_f32;
         for (k = 0; k < *nc; k++)
         {
             /* channel loop */
@@ -267,13 +262,13 @@ unsigned char *read_png_u8(const char *fname,
  * See read_png_u8() for details.
  */
 unsigned char *read_png_u8_rgb(const char *fname,
-			       size_t * nx, size_t * ny, size_t * nc)
+                               size_t * nx, size_t * ny, size_t * nc)
 {
     /* read the image as RGB unsigned char */
     return (unsigned char *) read_png_raw(fname, nx, ny, nc,
                                           PNG_TRANSFORM_GRAY_TO_RGB
                                           | PNG_TRANSFORM_STRIP_ALPHA,
-					  IO_PNG_U8);
+                                          IO_PNG_U8);
 }
 
 /**
@@ -303,18 +298,41 @@ float *read_png_f32(const char *fname, size_t * nx, size_t * ny, size_t * nc)
  * See read_png_f32() for details.
  */
 float *read_png_f32_rgb(const char *fname,
-			size_t * nx, size_t * ny, size_t * nc)
+                        size_t * nx, size_t * ny, size_t * nc)
 {
     /* read the image as RGB float */
     return (float *) read_png_raw(fname, nx, ny, nc,
-				  PNG_TRANSFORM_GRAY_TO_RGB
-				  | PNG_TRANSFORM_STRIP_ALPHA,
-				  IO_PNG_F32);
+                                  PNG_TRANSFORM_GRAY_TO_RGB
+                                  | PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_F32);
 }
 
 /*
  * WRITE
  */
+
+/**
+ * @brief internal function used to cleanup the memory when
+ * png_write_raw() fails
+ *
+ * @param fp file pointer to close, ignored if NULL
+ * @param idata, row_pointers arrays to free, ignored if NULL
+ * @param png_ptr_p, info_ptr_p, pointers to PNG structure pointers,
+ *        ignored if NULL
+ * @return -1
+ */
+static int write_png_abort(FILE * fp,
+			   png_byte * idata, png_bytep * row_pointers,
+			   png_structp * png_ptr_p, png_infop * info_ptr_p)
+{
+    png_destroy_write_struct(png_ptr_p, info_ptr_p);
+    if (NULL != row_pointers)
+	free(row_pointers);
+    if (NULL != idata)
+	free(idata);
+    if (NULL != fp)
+        (void) fclose(fp);
+    return -1;
+}
 
 /**
  * @brief internal function used to write a byte array as a PNG file
@@ -326,18 +344,22 @@ float *read_png_f32_rgb(const char *fname,
  * @todo handle 16bit
  *
  * @param fname PNG file name
- * @param data deinterlaced (RRRGGGBBBAAA) image byte array
- * @param width, height, channels number of columns, lines and channels
+ * @param data deinterlaced (RRR..GGG..BBB..AAA) image byte array
+ * @param nx, ny, nc number of columns, lines and channels
+ * @param dtype identifier for the data type to be used for output
  * @return 0 if everything OK, -1 if an error occured
  */
-static int write_png_raw(const char *fname, const png_byte * data,
-                         png_uint_32 width, png_uint_32 height,
-                         png_byte channels)
+static int write_png_raw(const char *fname, const void *data,
+                         size_t nx, size_t ny, size_t nc, int dtype)
 {
     FILE *fp;
     png_structp png_ptr;
     png_infop info_ptr;
-    const png_byte *data_ptr = NULL;
+    const unsigned char *data_u8 = NULL;
+    const unsigned char *data_u8_ptr = NULL;
+    const float *data_f32 = NULL;
+    const float *data_f32_ptr = NULL;
+    float tmp;
     png_byte *idata = NULL, *idata_ptr = NULL;
     png_bytep *row_pointers = NULL;
     png_byte bit_depth;
@@ -346,7 +368,11 @@ static int write_png_raw(const char *fname, const png_byte * data,
     size_t i, j, k;
 
     /* parameters check */
+    if (0 >= nx || 0 >= ny || 0 >= nc)
+        return -1;
     if (NULL == fname || NULL == data)
+        return -1;
+    if (IO_PNG_U8 != dtype && IO_PNG_F32 != dtype)
         return -1;
 
     /* open the PNG file */
@@ -354,20 +380,12 @@ static int write_png_raw(const char *fname, const png_byte * data,
         return -1;
 
     /* allocate the interlaced array and row pointers */
-    size = width * height * channels;
+    size = nx * ny * nc;
     if (NULL == (idata = (png_byte *) malloc(size * sizeof(png_byte))))
-    {
-        fclose(fp);
-        return -1;
-    }
+	return write_png_abort(fp, NULL, NULL, NULL, NULL);
 
-    if (NULL ==
-        (row_pointers = (png_bytep *) malloc(height * sizeof(png_bytep))))
-    {
-        free(idata);
-        fclose(fp);
-        return -1;
-    }
+    if (NULL == (row_pointers = (png_bytep *) malloc(ny * sizeof(png_bytep))))
+	return write_png_abort(fp, idata, NULL, NULL, NULL);
 
     /*
      * create and initialize the png_struct
@@ -375,41 +393,23 @@ static int write_png_raw(const char *fname, const png_byte * data,
      */
     if (NULL == (png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                    NULL, NULL, NULL)))
-    {
-        free(row_pointers);
-        free(idata);
-        (void) fclose(fp);
-        return -1;
-    }
+	return write_png_abort(fp, idata, row_pointers, NULL, NULL);
 
     /* allocate/initialize the memory for image information */
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
-    {
-        png_destroy_read_struct(&png_ptr, NULL, NULL);
-        free(row_pointers);
-        free(idata);
-        (void) fclose(fp);
-        return -1;
-    }
+	return write_png_abort(fp, idata, row_pointers, &png_ptr, NULL);
 
     /* set error handling */
     if (0 != setjmp(png_jmpbuf(png_ptr)))
-    {
-        /* free all of the memory associated with the png_ptr and info_ptr */
-        png_destroy_write_struct(&png_ptr, &info_ptr);
-        free(row_pointers);
-        free(idata);
-        (void) fclose(fp);
-        /* If we get here, we had a problem reading the file */
-        return -1;
-    }
+        /* if we get here, we had a problem reading the file */
+	return write_png_abort(fp, idata, row_pointers, &png_ptr, &info_ptr);
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
 
     /* set image informations */
     bit_depth = 8;
-    switch (channels)
+    switch (nc)
     {
     case 1:
         color_type = PNG_COLOR_TYPE_GRAY;
@@ -435,35 +435,63 @@ static int write_png_raw(const char *fname, const png_byte * data,
     filter = PNG_FILTER_TYPE_BASE;
 
     /* set image header */
-    png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth, color_type,
-                 interlace, compression, filter);
+    png_set_IHDR(png_ptr, info_ptr, (png_uint_32) nx, (png_uint_32) ny,
+                 bit_depth, color_type, interlace, compression, filter);
     /* TODO : significant bit (sBIT), gamma (gAMA), comments (text) chunks */
     png_write_info(png_ptr, info_ptr);
 
     /*
      * interlace and convert RRR GGG BBB to RGB RGB RGB
      * the image is interlaced layer after layer
-     * this involved more memory exchange, but allows a generic loop
+     * this involves more memory exchange, but allows a generic loop
      */
-    for (k = 0; k < channels; k++)
+    switch (dtype)
     {
-        /* channel loop */
-        data_ptr = data + (size_t) (width * height * k);
-        idata_ptr = idata + (size_t) k;
-        for (j = 0; j < height; j++)
+    case IO_PNG_U8:
+        data_u8 = (unsigned char *) data;
+        for (k = 0; k < nc; k++)
         {
-            /* row loop */
-            for (i = 0; i < width; i++)
+            /* channel loop */
+            data_u8_ptr = data_u8 + (size_t) (nx * ny * k);
+            idata_ptr = idata + (size_t) k;
+            for (j = 0; j < ny; j++)
             {
-                /* pixel loop */
-                *idata_ptr = *data_ptr++;
-                idata_ptr += channels;
+                /* row loop */
+                for (i = 0; i < nx; i++)
+                {
+                    /* pixel loop */
+                    *idata_ptr = (png_byte) * data_u8_ptr++;
+                    idata_ptr += nc;
+                }
             }
         }
+        break;
+    case IO_PNG_F32:
+        data_f32 = (float *) data;
+        for (k = 0; k < nc; k++)
+        {
+            /* channel loop */
+            data_f32_ptr = data_f32 + (size_t) (nx * ny * k);
+            idata_ptr = idata + (size_t) k;
+            for (j = 0; j < ny; j++)
+            {
+                /* row loop */
+                for (i = 0; i < nx; i++)
+                {
+                    /* pixel loop */
+                    tmp = floor(*data_f32_ptr++ + .5);
+                    *idata_ptr = (png_byte) (tmp < 0. ? 0. :
+                                             (tmp > 255. ? 255. : tmp));
+                    idata_ptr += nc;
+                }
+            }
+        }
+        break;
     }
+
     /* set row pointers */
-    for (j = 0; j < height; j++)
-        row_pointers[j] = idata + (size_t) (channels * width * j);
+    for (j = 0; j < ny; j++)
+        row_pointers[j] = idata + (size_t) (nc * nx * j);
 
     /* write out the entire image and end it */
     png_write_image(png_ptr, row_pointers);
@@ -489,15 +517,9 @@ static int write_png_raw(const char *fname, const png_byte * data,
 int write_png_u8(const char *fname, const unsigned char *data,
                  size_t nx, size_t ny, size_t nc)
 {
-    /*
-     * png_bytes are same as unsigned chars,
-     * so a simple cast is enough.
-     * but check, just in case...
-     */
-    assert(sizeof(png_byte) == sizeof(unsigned char));
-
-    return write_png_raw(fname, (png_byte *) data,
-                         (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc);
+    return write_png_raw(fname, (void *) data,
+                         (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc,
+                         IO_PNG_U8);
 }
 
 /**
@@ -515,29 +537,7 @@ int write_png_u8(const char *fname, const unsigned char *data,
 int write_png_f32(const char *fname, const float *data,
                   size_t nx, size_t ny, size_t nc)
 {
-    png_byte *data_byte = NULL, *byte_ptr = NULL;
-    const float *flt_ptr = NULL, *flt_end = NULL;
-    size_t size;
-    double tmp;
-    int retval;
-
-    /* allocate the byte array */
-    size = nx * ny * nc;
-    if (NULL == (data_byte = (png_byte *) malloc(size * sizeof(png_byte))))
-        return -1;
-
-    /* convert */
-    flt_ptr = data;
-    flt_end = flt_ptr + size;
-    byte_ptr = data_byte;
-    while (flt_ptr < flt_end)
-    {
-        tmp = floor(*flt_ptr++ + .5);
-        *byte_ptr++ = (png_byte) (tmp < 0. ? 0. : (tmp > 255. ? 255. : tmp));
-    }
-
-    retval = write_png_raw(fname, data_byte,
-                           (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc);
-    free(data_byte);
-    return retval;
+    return write_png_raw(fname, (void *) data,
+                         (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc,
+                         IO_PNG_F32);
 }

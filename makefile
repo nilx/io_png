@@ -1,5 +1,4 @@
-# Copyright 2010 IPOL Image Processing On Line http://www.ipol.im/
-# Author: Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
+# Copyright 2010 Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
 #
 # Copying and distribution of this file, with or without
 # modification, are permitted in any medium without royalty provided
@@ -7,14 +6,14 @@
 # offered as-is, without any warranty.
 
 # source code, C language
-CSRC	= io_png.c axpb_lib.c axpb.c
+CSRC	= io_png.c io_png_example.c
 
 # source code, all languages (only C here)
 SRC	= $(CSRC)
 # object files (partial compilation)
 OBJ	= $(CSRC:.c=.o)
 # binary executable program
-BIN	= axpb
+BIN	= example
 
 # default target : the binary executable program
 default: $(BIN)
@@ -23,7 +22,10 @@ default: $(BIN)
 COPT	= -O2 -funroll-loops -fomit-frame-pointer
 # complete C compiler options
 CFLAGS	= -ansi -pedantic -Wall -Wextra -Werror -pipe $(COPT)
+# linker options
 LDFLAGS	= -lpng -lm
+# library build dependencies (none)
+LIBDEPS =
 
 # optional makefile config
 -include makefile.extra
@@ -34,7 +36,7 @@ LDFLAGS	= -lpng -lm
 
 # final link of the partially compiled files
 # (LIBDEPS is for optional library dependencies)
-axpb	: $(OBJ) $(LIBDEPS)
+$(BIN)	: $(OBJ) $(LIBDEPS)
 	$(CC) $(OBJ) $(LDFLAGS) -o $@
 
 # cleanup

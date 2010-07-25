@@ -57,7 +57,7 @@ lint.flag	: $(CSRC)
 %.h	: %.c
 	cproto $< > $@
 
-# vcleanup the source code
+# cleanup the source code
 .PHONY	: beautify
 beautify	: beautify.flag
 beautify.flag	: $(CSRC)
@@ -67,4 +67,5 @@ beautify.flag	: $(CSRC)
 			$$FILE.$$$$ -o $$FILE \
 		&& rm $$FILE.$$$$; \
 	done
+	touch $@
 
