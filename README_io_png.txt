@@ -33,8 +33,7 @@ is read into a single array of 3600 cells, with:
 * the first 1200 cells (30 x 40) containing the red channel
 * the next 1200 cells containing the green channel
 * the last 1200 cells containing the blue channel
-In each channel, the image is stores row after row. Thus, the
-resulting array contains.
+In each channel, the image is stores row after row.
 
 No image structure is needed, and the image size information is
 collected via pointer parameters.

@@ -38,7 +38,7 @@ LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
 endif
 
 # sopurce documentation
-srcdoc	:
+srcdoc	: $(SRC)
 	doxygen doxygen.conf
 
 # build the png library
@@ -68,4 +68,11 @@ beautify.flag	: $(CSRC)
 		&& rm $$FILE.$$$$; \
 	done
 	touch $@
+
+RELEASE_TAG   = $(shell date -u +0.%Y%m%d)
+
+.PHONY	: release
+release	:
+	git archive --format=tar --prefix=io_png-$(RELEASE_TAG)/ HEAD \
+	        | gzip > ../io_png-$(RELEASE_TAG).tgz
 

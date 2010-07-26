@@ -32,7 +32,7 @@
  */
 
 /**
- * @mainpage PNG read/write routines
+ * @mainpage image read/write simplified interface
  *
  * README_io_png.txt:
  * @verbinclude README_io_png.txt
@@ -40,7 +40,7 @@
 
 /**
  * @file io_png.c
- * @brief PNG read-write routines
+ * @brief PNG read/write simplified interface
  *
  * This is a front-end to libpng, with routines to:
  * @li read a PNG file as a deinterlaced 8bit integer or float array
