@@ -84,6 +84,9 @@ int main()
         memcpy(img_b, img + 2 * nx * ny, nx * ny * sizeof(float));
 
         /* and do stuff with on the image arrays... */
+        free(img_r);
+	free(img_g);
+	free(img_b);
     }
 
     /* write the image */
@@ -92,6 +95,21 @@ int main()
         fprintf(stderr, "failed to write the image out.png\n");
         abort();
     }
+    free(img);
+
+    /*
+     * you can also use special read functions
+     * to handle colorspace
+     * conversion
+     */
+    /* read as RGB, and save */
+    img = read_png_f32_rgb("in.png", &nx, &ny);
+    write_png_f32("out_rgb.png", img, nx, ny, 3);
+    free(img);
+    /* read as gray, and save */
+    img = read_png_f32_gray("in.png", &nx, &ny);
+    write_png_f32("out_gray.png", img, nx, ny, 1);
+    free(img);
 
     return EXIT_SUCCESS;
 }

@@ -6,7 +6,7 @@
  * modification, are permitted provided that the following conditions
  * are met:
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above
  *    copyright notice, this list of conditions and the following
  *    disclaimer in the documentation and/or other materials provided
@@ -27,7 +27,7 @@
  *
  * The views and conclusions contained in the software and
  * documentation are those of the authors and should not be
- * interpreted as representing official policies, either expressed 
+ * interpreted as representing official policies, either expressed
  * or implied, of the copyright holder.
  */
 
@@ -52,7 +52,8 @@
  * @todo handle lossless 16bit data
  * @todo test suite
  * @todo function pointers for the switched conversions
- * @todo force read as gray
+ * @todo internally handle RGB/gray conversion in read_png_raw()
+ * @todo handle deinterlacing as a libpng transform function
  *
  * @author Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
  */
@@ -192,7 +193,7 @@ static void *read_png_raw(const char *fname,
      * allocate the output data RGB array
      * deinterlace and convert png RGB RGB RGB 8bit to RRR GGG BBB
      * the image is deinterlaced layer after layer
-     * this involves more memory exchange, but allows a generic loop
+     * this generic loop also works for one single channel
      */
     size = *nx * *ny * *nc;
     switch (dtype)
@@ -277,14 +278,61 @@ unsigned char *read_png_u8(const char *fname,
  *
  * See read_png_u8() for details.
  */
-unsigned char *read_png_u8_rgb(const char *fname,
-                               size_t * nx, size_t * ny, size_t * nc)
+unsigned char *read_png_u8_rgb(const char *fname, size_t * nx, size_t * ny)
 {
+    size_t nc;
+
     /* read the image as RGB unsigned char */
-    return (unsigned char *) read_png_raw(fname, nx, ny, nc,
+    return (unsigned char *) read_png_raw(fname, nx, ny, &nc,
                                           PNG_TRANSFORM_GRAY_TO_RGB
                                           | PNG_TRANSFORM_STRIP_ALPHA,
                                           IO_PNG_U8);
+}
+
+/**
+ * @brief read a PNG file into a 8bit integer array, converted to gray
+ *
+ * See read_png_u8() for details.
+ */
+unsigned char *read_png_u8_gray(const char *fname, size_t * nx, size_t * ny)
+{
+    size_t nc;
+    unsigned char *img;
+
+    /* read the image */
+    img = (unsigned char *) read_png_raw(fname, nx, ny, &nc,
+                                         PNG_TRANSFORM_STRIP_ALPHA,
+                                         IO_PNG_U8);
+    if (NULL == img)
+        /* error */
+        return NULL;
+    if (1 == nc)
+        /* already gray */
+        return img;
+    else
+    {
+        /* convert to gray */
+        unsigned char *ptr_r, *ptr_g, *ptr_b, *ptr_gray, *ptr_end;
+
+        /*
+         * RGB->gray conversion
+         * Y = (6969 * R + 23434 * G + 2365 * B)/32768
+         * integer approximation of
+         * Y = 0.212671 * R + 0.715160 * G + 0.072169 * B
+         */
+        ptr_r = img;
+        ptr_g = img + *nx * *ny;
+        ptr_b = img + 2 * *nx * *ny;
+        ptr_gray = img;
+        ptr_end = ptr_gray + *nx * *ny;
+        while (ptr_gray < ptr_end)
+            *ptr_gray++ = (unsigned char) (6969 * *ptr_r++
+                                           + 23434 * *ptr_g++
+                                           + 2365 * *ptr_b++) / 32768;
+        /* resize and return the image */
+        img = realloc(img, *nx * *ny * sizeof(unsigned char));
+        return img;
+    }
 }
 
 /**
@@ -313,13 +361,59 @@ float *read_png_f32(const char *fname, size_t * nx, size_t * ny, size_t * nc)
  *
  * See read_png_f32() for details.
  */
-float *read_png_f32_rgb(const char *fname,
-                        size_t * nx, size_t * ny, size_t * nc)
+float *read_png_f32_rgb(const char *fname, size_t * nx, size_t * ny)
 {
+    size_t nc;
+
     /* read the image as RGB float */
-    return (float *) read_png_raw(fname, nx, ny, nc,
+    return (float *) read_png_raw(fname, nx, ny, &nc,
                                   PNG_TRANSFORM_GRAY_TO_RGB
                                   | PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_F32);
+}
+
+/**
+ * @brief read a PNG file into a 32bit float array, converted to gray
+ *
+ * See read_png_f32() for details.
+ */
+float *read_png_f32_gray(const char *fname, size_t * nx, size_t * ny)
+{
+    size_t nc;
+    float *img;
+
+    /* read the image */
+    img = (float *) read_png_raw(fname, nx, ny, &nc,
+                                 PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_F32);
+    if (NULL == img)
+        /* error */
+        return NULL;
+    if (1 == nc)
+        /* already gray */
+        return img;
+    else
+    {
+        /* convert to gray */
+        float *ptr_r, *ptr_g, *ptr_b, *ptr_gray, *ptr_end;
+
+        /*
+         * RGB->gray conversion
+         * Y = (6969 * R + 23434 * G + 2365 * B)/32768
+         * integer approximation of
+         * Y = 0.212671 * R + 0.715160 * G + 0.072169 * B
+         */
+        ptr_r = img;
+        ptr_g = img + *nx * *ny;
+        ptr_b = img + 2 * *nx * *ny;
+        ptr_gray = img;
+        ptr_end = ptr_gray + *nx * *ny;
+        while (ptr_gray < ptr_end)
+            *ptr_gray++ = (float) (6969 * *ptr_r++
+                                   + 23434 * *ptr_g++
+                                   + 2365 * *ptr_b++) / 32768;
+        /* resize and return the image */
+        img = realloc(img, *nx * *ny * sizeof(float));
+        return img;
+    }
 }
 
 /*
