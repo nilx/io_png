@@ -28,7 +28,7 @@ LDFLAGS	= -lpng -lm
 LIBDEPS =
 
 # makefile config for development
--include makefile.dev
+#-include makefile.dev
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c
