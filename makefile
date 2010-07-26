@@ -27,8 +27,8 @@ LDFLAGS	= -lpng -lm
 # library build dependencies (none)
 LIBDEPS =
 
-# optional makefile config
--include makefile.extra
+# makefile config for development
+-include makefile.dev
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c
