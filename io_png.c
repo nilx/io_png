@@ -97,7 +97,7 @@ static void *read_png_abort(FILE * fp,
                             png_structp * png_ptr_p, png_infop * info_ptr_p)
 {
     png_destroy_read_struct(png_ptr_p, info_ptr_p, NULL);
-    if (NULL != fp)
+    if (NULL != fp && stdin != fp)
         (void) fclose(fp);
     return NULL;
 }
@@ -124,7 +124,8 @@ static void *read_png_raw(const char *fname,
     png_infop info_ptr;
     png_bytepp row_pointers;
     png_bytep row_ptr;
-    FILE *fp = NULL;
+    /* volatile : because of -Wclobbered gcc warnings */
+    FILE * volatile fp = NULL;
     void *data = NULL;
     unsigned char *data_u8 = NULL;
     unsigned char *data_u8_ptr = NULL;
@@ -139,8 +140,10 @@ static void *read_png_raw(const char *fname,
     if (IO_PNG_U8 != dtype && IO_PNG_F32 != dtype)
         return NULL;
 
-    /* open the PNG file */
-    if (NULL == (fp = fopen(fname, "rb")))
+    /* open the PNG input file */
+    if (0 == strcmp(fname, "-"))
+        fp = stdin;
+    else if (NULL == (fp = fopen(fname, "rb")))
         return NULL;
 
     /* read in some of the signature bytes and check this signature */
@@ -245,8 +248,7 @@ static void *read_png_raw(const char *fname,
     }
 
     /* clean up and free any memory allocated, close the file */
-    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-    fclose(fp);
+    (void) read_png_abort(fp, &png_ptr, &info_ptr);
 
     return data;
 }
@@ -440,7 +442,7 @@ static int write_png_abort(FILE * fp,
         free(row_pointers);
     if (NULL != idata)
         free(idata);
-    if (NULL != fp)
+    if (NULL != fp && stdout != fp)
         (void) fclose(fp);
     return -1;
 }
@@ -463,17 +465,18 @@ static int write_png_abort(FILE * fp,
 static int write_png_raw(const char *fname, const void *data,
                          size_t nx, size_t ny, size_t nc, int dtype)
 {
-    FILE *fp;
     png_structp png_ptr;
     png_infop info_ptr;
+    png_byte *idata = NULL, *idata_ptr = NULL;
+    png_bytep *row_pointers = NULL;
+    png_byte bit_depth;
+    /* volatile : because of -Wclobbered gcc warnings */
+    FILE * volatile fp;
     const unsigned char *data_u8 = NULL;
     const unsigned char *data_u8_ptr = NULL;
     const float *data_f32 = NULL;
     const float *data_f32_ptr = NULL;
     float tmp;
-    png_byte *idata = NULL, *idata_ptr = NULL;
-    png_bytep *row_pointers = NULL;
-    png_byte bit_depth;
     int color_type, interlace, compression, filter;
     size_t size;
     size_t i, j, k;
@@ -486,8 +489,10 @@ static int write_png_raw(const char *fname, const void *data,
     if (IO_PNG_U8 != dtype && IO_PNG_F32 != dtype)
         return -1;
 
-    /* open the PNG file */
-    if (NULL == (fp = fopen(fname, "wb")))
+    /* open the PNG output file */
+    if (0 == strcmp(fname, "-"))
+        fp = stdout;
+    else if (NULL == (fp = fopen(fname, "wb")))
         return -1;
 
     /* allocate the interlaced array and row pointers */
@@ -609,10 +614,7 @@ static int write_png_raw(const char *fname, const void *data,
     png_write_end(png_ptr, info_ptr);
 
     /* clean up and free any memory allocated, close the file */
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    free(row_pointers);
-    free(idata);
-    fclose(fp);
+    (void) write_png_abort(fp, idata, row_pointers, &png_ptr, &info_ptr);
 
     return 0;
 }
