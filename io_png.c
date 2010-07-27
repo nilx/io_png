@@ -122,7 +122,7 @@ static void *read_png_raw(const char *fname,
     png_infop info_ptr;
     png_bytepp row_pointers;
     png_bytep row_ptr;
-    /* volatile : because of -Wclobbered gcc warnings */
+    /* volatile : because of setjmp/longjmp */
     FILE *volatile fp = NULL;
     void *data = NULL;
     unsigned char *data_u8 = NULL;
@@ -468,7 +468,7 @@ static int write_png_raw(const char *fname, const void *data,
     png_byte *idata = NULL, *idata_ptr = NULL;
     png_bytep *row_pointers = NULL;
     png_byte bit_depth;
-    /* volatile : because of -Wclobbered gcc warnings */
+    /* volatile : because of setjmp/longjmp */
     FILE *volatile fp;
     const unsigned char *data_u8 = NULL;
     const unsigned char *data_u8_ptr = NULL;
