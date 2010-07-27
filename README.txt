@@ -25,7 +25,7 @@ copyright notice, conditions and disclaimer for details.
 
 # REQUIREMENTS
 
-libpng is required, version >= 1.2.41. The source code and binaries
+libpng is required, version >= 1.2.2. The source code and binaries
 can be found at http://www.libpng.org/pub/png/libpng.html.
 
 io_png.c is ANSI C, and should compile on any system with any ANSI C

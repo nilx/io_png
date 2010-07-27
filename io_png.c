@@ -282,12 +282,38 @@ unsigned char *read_png_u8(const char *fname,
 unsigned char *read_png_u8_rgb(const char *fname, size_t * nx, size_t * ny)
 {
     size_t nc;
+    unsigned char *img;
 
-    /* read the image as RGB unsigned char */
-    return (unsigned char *) read_png_raw(fname, nx, ny, &nc,
-                                          PNG_TRANSFORM_GRAY_TO_RGB
-                                          | PNG_TRANSFORM_STRIP_ALPHA,
-                                          IO_PNG_U8);
+    /* read the image */
+    img = (unsigned char *) read_png_raw(fname, nx, ny, &nc,
+                                         PNG_TRANSFORM_STRIP_ALPHA,
+                                         IO_PNG_U8);
+    if (NULL == img)
+        /* error */
+        return NULL;
+    if (3 == nc)
+        /* already RGB */
+        return img;
+    else
+    {
+        /* convert to RGB */
+        unsigned char *ptr_r, *ptr_g, *ptr_b, *ptr_end;
+
+        /* resize the image */
+        img = realloc(img, 3 * *nx * *ny * sizeof(unsigned char));
+
+        /* gray->RGB conversion */
+        ptr_r = img;
+        ptr_end = ptr_r + *nx * *ny;
+        ptr_g = img + *nx * *ny;
+        ptr_b = img + 2 * *nx * *ny;
+        while (ptr_r < ptr_end)
+        {
+            *ptr_g++ = *ptr_r;
+            *ptr_b++ = *ptr_r++;
+        }
+        return img;
+    }
 }
 
 /**
@@ -365,11 +391,37 @@ float *read_png_f32(const char *fname, size_t * nx, size_t * ny, size_t * nc)
 float *read_png_f32_rgb(const char *fname, size_t * nx, size_t * ny)
 {
     size_t nc;
+    float *img;
 
-    /* read the image as RGB float */
-    return (float *) read_png_raw(fname, nx, ny, &nc,
-                                  PNG_TRANSFORM_GRAY_TO_RGB
-                                  | PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_F32);
+    /* read the image */
+    img = (float *) read_png_raw(fname, nx, ny, &nc,
+                                 PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_F32);
+    if (NULL == img)
+        /* error */
+        return NULL;
+    if (3 == nc)
+        /* already RGB */
+        return img;
+    else
+    {
+        /* convert to RGB */
+        float *ptr_r, *ptr_g, *ptr_b, *ptr_end;
+
+        /* resize the image */
+        img = realloc(img, 3 * *nx * *ny * sizeof(float));
+
+        /* gray->RGB conversion */
+        ptr_r = img;
+        ptr_end = ptr_r + *nx * *ny;
+        ptr_g = img + *nx * *ny;
+        ptr_b = img + 2 * *nx * *ny;
+        while (ptr_r < ptr_end)
+        {
+            *ptr_g++ = *ptr_r;
+            *ptr_b++ = *ptr_r++;
+        }
+        return img;
+    }
 }
 
 /**
