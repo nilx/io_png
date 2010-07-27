@@ -1,5 +1,5 @@
 #ifdef __cplusplus
-extern C {
+extern "C" {
 #endif
 
 #define IO_PNG_VERSION 0.20100727

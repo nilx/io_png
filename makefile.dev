@@ -6,6 +6,9 @@
 # the copyright notice and this notice are preserved.  This file is
 # offered as-is, without any warranty.
 
+DATE   = $(shell date -u +%Y%m%d)
+RELEASE_TAG   = 0.$(DATE)
+
 # use a cached compiler
 CC	  = ccache cc
 
@@ -40,8 +43,8 @@ lint.flag	: $(CSRC)
 
 # update the C headers
 %.h	: %.c
-	echo "#ifdef __cplusplus\nextern "C" {\n#endif\n" > $@
-	echo "#define IO_PNG_VERSION 0.20100727\n" >> $@
+	echo "#ifdef __cplusplus\nextern \"C\" {\n#endif\n" > $@
+	echo "#define IO_PNG_VERSION $(RELEASE_TAG)\n" >> $@
 	cproto $< >> $@
 	echo "\n#ifdef __cplusplus\n}\n#endif" >> $@
 
@@ -56,8 +59,6 @@ beautify.flag	: $(CSRC)
 		&& rm $$FILE.$$$$; \
 	done
 	touch $@
-
-RELEASE_TAG   = $(shell date -u +0.%Y%m%d)
 
 .PHONY	: release
 release	:
