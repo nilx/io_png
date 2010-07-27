@@ -52,4 +52,4 @@ $(LIBTIFF_DIR) : $(LIBTIFF_ARC)
 	touch $@
 
 $(LIBTIFF_ARC) :
-	wget $(LIBTIFF_URL)
+	curl -L $(LIBTIFF_URL) > $@

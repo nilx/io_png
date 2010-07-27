@@ -42,4 +42,4 @@ $(LIBPNG_DIR) : $(LIBPNG_ARC)
 	touch $@
 
 $(LIBPNG_ARC) :
-	wget $(LIBPNG_URL)
+	curl -L $(LIBPNG_URL) > $@

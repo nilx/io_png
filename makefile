@@ -27,8 +27,24 @@ LDFLAGS	= -lpng -lm
 # library build dependencies (none)
 LIBDEPS =
 
-# makefile config for development
-#-include makefile.dev
+ifdef LOCAL_LIBS
+# use local embedded libraries
+LIBDIR = ./libs/build/lib
+INCDIR = ./libs/build/include
+LIBDEPS += libpng
+CFLAGS 	+= -I$(INCDIR) -D_LOCAL_LIBS
+LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
+endif
+
+ifdef DEV
+# extra makefile config
+-include makefile.dev
+endif
+
+# build the png library
+.PHONY	: libpng
+libpng	:
+	$(MAKE) -C libs libpng
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c
@@ -43,5 +59,7 @@ $(BIN)	: $(OBJ) $(LIBDEPS)
 .PHONY	: clean distclean
 clean	:
 	$(RM) $(OBJ)
+	$(MAKE) -C libs $@
 distclean	: clean
 	$(RM) $(BIN)
+	$(MAKE) -C libs $@

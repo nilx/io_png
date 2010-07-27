@@ -34,8 +34,8 @@
 /**
  * @mainpage image read/write simplified interface
  *
- * README_io_png.txt:
- * @verbinclude README_io_png.txt
+ * README.txt:
+ * @verbinclude README.txt
  */
 
 /**
@@ -46,12 +46,13 @@
  * @li read a PNG file as a deinterlaced 8bit integer or float array
  * @li write a 8bit integer or float array to a PNG file
  *
- * Multi-channel images are handled : grey, grey+alpha, rgb and rgb+alpha.
+ * Multi-channel images are handled : grey, grey+alpha, rgb and
+ * rgb+alpha, as well as on-the-fly color model conversion.
  *
  * @todo handle stdin/stdout as "-"
  * @todo handle lossless 16bit data
  * @todo test suite
- * @todo function pointers for the switched conversions
+ * @todo function pointers for the switched conversions?
  * @todo internally handle RGB/gray conversion in read_png_raw()
  * @todo handle deinterlacing as a libpng transform function
  *

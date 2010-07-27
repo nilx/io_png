@@ -46,4 +46,4 @@ $(LIBJPEG_DIR) : $(LIBJPEG_ARC)
 	touch $@
 
 $(LIBJPEG_ARC) :
-	wget $(LIBJPEG_URL)
+	curl -L $(LIBJPEG_URL) > $@

@@ -29,8 +29,6 @@ $(LIB_DIR)/% $(INC_DIR)/%	:
 -include makefile.libpng
 -include makefile.libjpeg
 -include makefile.libtiff
-#-include makefile.libfftw
-#-include makefile.atlas
 
 #
 # HOUSEKEEPING
