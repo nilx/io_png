@@ -51,11 +51,10 @@ libpng	:
 	$(MAKE) -C libs libpng
 
 # partial C compilation xxx.c -> xxx.o
-%.o	: %.c
+%.o	: %.c $(LIBDEPS)
 	$(CC) $< -c $(CFLAGS) -o $@
 
 # final link of the partially compiled files
-# (LIBDEPS is for optional library dependencies)
 $(BIN)	: $(OBJ) $(LIBDEPS)
 	$(CC) $(OBJ) $(LDFLAGS) -o $@
 
