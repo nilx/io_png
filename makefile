@@ -56,10 +56,12 @@ $(BIN)	: $(OBJ) $(LIBDEPS)
 	$(CC) $(OBJ) $(LDFLAGS) -o $@
 
 # cleanup
-.PHONY	: clean distclean
+.PHONY	: clean distclean scrub
 clean	:
 	$(RM) $(OBJ)
 	$(MAKE) -C libs $@
 distclean	: clean
 	$(RM) $(BIN)
+	$(MAKE) -C libs $@
+scrub	: distclean
 	$(MAKE) -C libs $@

@@ -34,14 +34,16 @@ $(LIB_DIR)/% $(INC_DIR)/%	:
 # HOUSEKEEPING
 #
 
+.PHONY	: clean distclean scrub
 clean	:
 	$(RM) -r $(ZLIB_DIR)	
 	$(RM) -r $(LIBPNG_DIR)
 	$(RM) -r $(LIBJPEG_DIR)
 	$(RM) -r $(LIBTIFF_DIR)
 distclean	: clean
+	$(RM) -r $(DEST_DIR)
+scrub	: distclean
 	$(RM) $(ZLIB_ARC)
 	$(RM) $(LIBPNG_ARC)
 	$(RM) $(LIBJPEG_ARC)
 	$(RM) $(LIBTIFF_ARC)
-	$(RM) -r $(DEST_DIR)
