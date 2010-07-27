@@ -65,7 +65,7 @@ to use:
 These functions have the same syntax:
 
     read_png_xxx(fname, &nx, &ny, &nc)
-    - fname: file name
+    - fname: file name; the standard input stream is used if fname is "-"
     - nx, ny, nc: variables to fill with the image size
 
 Four secondary read functions can be used to force a color model:
@@ -85,7 +85,7 @@ the one received from the read functions.
 
 2 front-end functions are available; they all have the same syntax,
 write_png_xxx(fname, data, nx, ny, nc):
-    - fname: file name
+    - fname: file name, the standard output stream is used if fname is "-"
     - data: image array
     - nx, ny, nc: image size
 
@@ -106,14 +106,13 @@ makefile, with the `make` command.
 
 ## LOCAL LIBRARIES
 
-If libpng is not installed on your system, of if you prefer a static
-build, a mechanism is available to automatically download, build and
-include libpng in your program:
+If libpng is not installed on your system, of if you prefer a local
+static build, a mechanism is available to automatically download,
+build and include libpng in your program:
 
 1. run `make libpng`;
    this uses the makefiles from the `libs` folder to download and
-   compile libpng and zlib (required), and builds the library into
-   `libs/build`;
+   compile libpng and zlib, and builds the libraries into `libs/build`;
 2. use the "-D_LOCAL_LIBS -I./libs/build/include" options to compile
    io_png.c;
 3. add ./libs/build/lib/libpng.a ./libs/build/lib/libz.a to the list of
@@ -125,10 +124,10 @@ instead of `make`.
 
 # TODO
 
-* handle read from stdin and write to stdout
 * handle 16bit data
 * add a test suite
-* internally handle gray conversion (libpng low-level interface)
+* internally handle gray conversion and deinterlacing
+  (requires libpng low-level interface)
 
 # COPYRIGHT
 

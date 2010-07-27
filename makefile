@@ -27,12 +27,16 @@ LDFLAGS	= -lpng -lm
 # library build dependencies (none)
 LIBDEPS =
 
-ifdef LOCAL_LIBS
 # use local embedded libraries
+ifdef LOCAL_LIBS
+# library location
 LIBDIR = ./libs/build/lib
 INCDIR = ./libs/build/include
+# libpng is required
 LIBDEPS += libpng
+# compile options to use the local libpng header
 CFLAGS 	+= -I$(INCDIR) -D_LOCAL_LIBS
+# link options to use the local libraries
 LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
 endif
 

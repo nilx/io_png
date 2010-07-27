@@ -49,10 +49,8 @@
  * Multi-channel images are handled : grey, grey+alpha, rgb and
  * rgb+alpha, as well as on-the-fly color model conversion.
  *
- * @todo handle stdin/stdout as "-"
  * @todo handle lossless 16bit data
- * @todo test suite
- * @todo function pointers for the switched conversions?
+ * @todo add a test suite
  * @todo internally handle RGB/gray conversion in read_png_raw()
  * @todo handle deinterlacing as a libpng transform function
  *
@@ -107,7 +105,7 @@ static void *read_png_abort(FILE * fp,
  *
  * @todo don't loose 16bit info
  *
- * @param fname PNG file name
+ * @param fname PNG file name, "-" means stdin
  * @param nx, ny, nc pointers to variables to be filled
  *        with the number of columns, lines and channels of the image
  * @param transform a PNG_TRANSFORM to be added to the default read transforms
@@ -125,7 +123,7 @@ static void *read_png_raw(const char *fname,
     png_bytepp row_pointers;
     png_bytep row_ptr;
     /* volatile : because of -Wclobbered gcc warnings */
-    FILE * volatile fp = NULL;
+    FILE *volatile fp = NULL;
     void *data = NULL;
     unsigned char *data_u8 = NULL;
     unsigned char *data_u8_ptr = NULL;
@@ -456,7 +454,7 @@ static int write_png_abort(FILE * fp,
  *
  * @todo handle 16bit
  *
- * @param fname PNG file name
+ * @param fname PNG file name, "-" means stdout
  * @param data deinterlaced (RRR..GGG..BBB..AAA) image byte array
  * @param nx, ny, nc number of columns, lines and channels
  * @param dtype identifier for the data type to be used for output
@@ -471,7 +469,7 @@ static int write_png_raw(const char *fname, const void *data,
     png_bytep *row_pointers = NULL;
     png_byte bit_depth;
     /* volatile : because of -Wclobbered gcc warnings */
-    FILE * volatile fp;
+    FILE *volatile fp;
     const unsigned char *data_u8 = NULL;
     const unsigned char *data_u8_ptr = NULL;
     const float *data_f32 = NULL;

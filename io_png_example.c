@@ -85,8 +85,8 @@ int main()
 
         /* and do stuff with on the image arrays... */
         free(img_r);
-	free(img_g);
-	free(img_b);
+        free(img_g);
+        free(img_b);
     }
 
     /* write the image */
