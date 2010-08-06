@@ -6,7 +6,8 @@
 # the copyright notice and this notice are preserved.  This file is
 # offered as-is, without any warranty.
 
-DATE   = $(shell date -u +%Y%m%d)
+PROJECT	  = io_png
+DATE   	  = $(shell date -u +%Y%m%d)
 RELEASE_TAG   = 0.$(DATE)
 
 # use a cached compiler
@@ -62,5 +63,5 @@ beautify.flag	: $(CSRC)
 
 .PHONY	: release
 release	:
-	git archive --format=tar --prefix=io_png-$(RELEASE_TAG)/ HEAD \
-	        | gzip > ../io_png-$(RELEASE_TAG).tgz
+	git archive --format=tar --prefix=$(PROJECT)-$(RELEASE_TAG)/ HEAD \
+	        | gzip > ../$(PROJECT)-$(RELEASE_TAG).tgz
