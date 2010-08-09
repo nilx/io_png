@@ -113,13 +113,13 @@ build and include libpng in your program:
 1. run `make libpng`;
    this uses the makefiles from the `libs` folder to download and
    compile libpng and zlib, and builds the libraries into `libs/build`;
-2. use the "-D_LOCAL_LIBS -I./libs/build/include" options to compile
+2. use the "-DWITH_LOCAL_LIBPNG -I./libs/build/include" options to compile
    io_png.c;
 3. add ./libs/build/lib/libpng.a ./libs/build/lib/libz.a to the list of
   files being linked into your program
 
 This is automatically handled in the provided makefile for the example
-code io_png_example.c; simply use the `make LOCAL_LIBS=1` command
+code io_png_example.c; simply use the `make WITH_LOCAL_LIBS=1` command
 instead of `make`.
 
 # TODO

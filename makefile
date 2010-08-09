@@ -28,14 +28,14 @@ LDFLAGS	= -lpng -lm
 LIBDEPS =
 
 # use local embedded libraries
-ifdef LOCAL_LIBS
+ifdef WITH_LOCAL_LIBS
 # library location
 LIBDIR = ./libs/build/lib
 INCDIR = ./libs/build/include
 # libpng is required
 LIBDEPS += libpng
 # compile options to use the local libpng header
-CFLAGS 	+= -I$(INCDIR) -D_LOCAL_LIBS
+CFLAGS 	+= -I$(INCDIR) -DWITH_LOCAL_LIBPNG
 # link options to use the local libraries
 LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
 endif
@@ -62,6 +62,7 @@ $(BIN)	: $(OBJ) $(LIBDEPS)
 .PHONY	: clean distclean scrub
 clean	:
 	$(RM) $(OBJ)
+	$(RM) *.flag
 	$(MAKE) -C libs $@
 distclean	: clean
 	$(RM) $(BIN)

@@ -45,7 +45,7 @@
 #include <assert.h>
 
 /* option to use a local version of the libpng */
-#ifdef _LOCAL_LIBS
+#ifdef WITH_LOCAL_LIBPNG
 #include "png.h"
 #else
 #include <png.h>
