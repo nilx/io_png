@@ -43,9 +43,10 @@ lint.flag	: $(CSRC)
 	touch $@
 
 # update the C headers
-%.h	: %.c
+io_png.h	: io_png.c
 	echo "#ifdef __cplusplus\nextern \"C\" {\n#endif\n" > $@
-	echo "#define IO_PNG_VERSION $(RELEASE_TAG)\n" >> $@
+	echo "#define IO_PNG_VERSION \"$(RELEASE_TAG)\"\n" >> $@
+	echo "#include <stddef.h>\n" >> $@
 	cproto $< >> $@
 	echo "\n#ifdef __cplusplus\n}\n#endif" >> $@
 
