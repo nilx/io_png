@@ -20,8 +20,9 @@ simplified interface.
 
 # LICENSE
 
-io_png.c is distributed under a BSD licence. See the included
-copyright notice, conditions and disclaimer for details.
+io_png.c is distributed under a GPL3+ or BSD licence, at your
+option. See the included copyright notice, conditions and disclaimer
+for details.
 
 # REQUIREMENTS
 
@@ -126,6 +127,7 @@ instead of `make`.
 
 * handle 16bit data
 * add a test suite
+* C++ wrappers (vector output, merged functions)
 * internally handle gray conversion and deinterlacing
   (requires libpng low-level interface)
 
