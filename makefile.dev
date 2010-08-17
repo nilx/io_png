@@ -44,11 +44,16 @@ lint.flag	: $(CSRC)
 
 # update the C headers
 io_png.h	: io_png.c
-	echo "#ifdef __cplusplus\nextern \"C\" {\n#endif\n" > $@
-	echo "#define IO_PNG_VERSION \"$(RELEASE_TAG)\"\n" >> $@
-	echo "#include <stddef.h>\n" >> $@
-	cproto $< >> $@
-	echo "\n#ifdef __cplusplus\n}\n#endif" >> $@
+	@echo "" > $@.tmp
+	@echo "#ifndef _IO_PNG_H\n#define _IO_PNG_H\n" >> $@.tmp
+	@echo "#include <stddef.h>\n" >> $@.tmp
+	@echo "#define IO_PNG_VERSION \"$(RELEASE_TAG)\"\n" >> $@.tmp
+	@echo "#ifdef __cplusplus\nextern \"C\" {\n#endif\n" >> $@.tmp
+	-cproto $< >> $@.tmp
+	@echo "" >> $@.tmp
+	@echo "#ifdef __cplusplus\n}\n#endif\n" >> $@.tmp
+	@echo "#endif /* !_IO_PNG_H */" >> $@.tmp
+	mv $@.tmp $@
 
 # cleanup the source code
 .PHONY	: beautify
