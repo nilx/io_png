@@ -8,8 +8,8 @@
 # main makefile config
 -include makefile
 
-PROJECT	  = io_png
-DATE   	  = $(shell date -u +%Y%m%d)
+PROJECT	= io_png
+DATE	= $(shell date -u +%Y%m%d)
 RELEASE_TAG   = 0.$(DATE)
 
 # source documentation
@@ -36,6 +36,7 @@ beautify.flag	: $(CSRC)
 	touch $@
 
 .PHONY	: release
-release	:
+release	: beautify lint default distclean
+	-git commit -a
 	git archive --format=tar --prefix=$(PROJECT)-$(RELEASE_TAG)/ HEAD \
 	        | gzip > ../$(PROJECT)-$(RELEASE_TAG).tar.gz

@@ -53,6 +53,9 @@
 #define IO_PNG_U8  0x0001       /* 8bit unsigned integer */
 #define IO_PNG_F32 0x0002       /* 32bit float */
 
+/* string tag inserted into the binary, helps tracking versions */
+char _io_png_tag[] = "using io_png " IO_PNG_VERSION;
+
 /*
  * READ
  */
