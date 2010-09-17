@@ -15,7 +15,7 @@
 # OVERVIEW
 
 io_png.c contains high-level routines to read and write PNG images
-using libpng. On only handles common use cases, and provides a
+using libpng. It only handles common use cases, and provides a
 simplified interface.
 
 # LICENSE
@@ -29,26 +29,29 @@ for details.
 libpng is required, version >= 1.2.2. The source code and binaries
 can be found at http://www.libpng.org/pub/png/libpng.html.
 
+Note that libpng requires zlib for compression. The source code and
+binaries can be found at http://www.zlib.net/.
+
 io_png.c is ANSI C, and should compile on any system with any ANSI C
 compiler.
 
 # USAGE
 
 Compile io_png.c with your program, and include io_png.h to get the
-function declarations.
+function declarations. You can use io_png.c with C or C++ code.
 
 ## READ
 
 A PNG image is read into a single array. For multiple channel images,
-the output array is deinterlaced and successively contains contains
-each channel. For example, a color image with 30 rows and 40 columns
-is read into a single array of 3600 cells, with:
+the output array is deinterlaced and successively contains each
+channel. For example, a color image with 30 rows and 40 columns is
+read into a single array of 3600 cells, with:
 
 * the first 1200 cells (30 x 40) containing the red channel
 * the next 1200 cells containing the green channel
 * the last 1200 cells containing the blue channel
 
-In each channel, the image is stores row after row.
+In each channel, the image is stored row after row.
 
 No image structure is needed, and the image size information is
 collected via pointer parameters.
@@ -127,9 +130,10 @@ instead of `make`.
 
 * handle 16bit data
 * add a test suite
+* cmake support
 * C++ wrappers (vector output, merged functions)
 * internally handle gray conversion and deinterlacing
-  (requires libpng low-level interface)
+  (using libpng low-level interface)
 
 # COPYRIGHT
 

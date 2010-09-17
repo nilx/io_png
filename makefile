@@ -40,11 +40,6 @@ CFLAGS 	+= -I$(INCDIR) -DWITH_LOCAL_LIBPNG
 LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
 endif
 
-ifdef DEV
-# extra makefile config
--include makefile.dev
-endif
-
 # build the png library
 .PHONY	: libpng
 libpng	:
