@@ -38,4 +38,4 @@ beautify.flag	: $(CSRC)
 .PHONY	: release
 release	:
 	git archive --format=tar --prefix=$(PROJECT)-$(RELEASE_TAG)/ HEAD \
-	        | gzip > ../$(PROJECT)-$(RELEASE_TAG).tgz
+	        | gzip > ../$(PROJECT)-$(RELEASE_TAG).tar.gz
