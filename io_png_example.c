@@ -113,3 +113,10 @@ int main()
 
     return EXIT_SUCCESS;
 }
+
+/**
+ * @mainpage io_png : simplified front-end to libpng
+ *
+ * README.txt:
+ * @verbinclude README.txt
+ */
