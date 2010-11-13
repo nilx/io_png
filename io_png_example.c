@@ -31,7 +31,7 @@ int main()
     float *img = NULL;
 
     /* read the image */
-    img = read_png_f32("in.png", &nx, &ny, &nc);
+    img = io_png_read_f32("in.png", &nx, &ny, &nc);
 
     /* if img == NULL, there was an error while reading */
     if (NULL == img)
@@ -90,7 +90,7 @@ int main()
     }
 
     /* write the image */
-    if (0 != write_png_f32("out.png", img, nx, ny, nc))
+    if (0 != io_png_write_f32("out.png", img, nx, ny, nc))
     {
         fprintf(stderr, "failed to write the image out.png\n");
         abort();
@@ -103,12 +103,12 @@ int main()
      * conversion
      */
     /* read as RGB, and save */
-    img = read_png_f32_rgb("in.png", &nx, &ny);
-    write_png_f32("out_rgb.png", img, nx, ny, 3);
+    img = io_png_read_f32_rgb("in.png", &nx, &ny);
+    io_png_write_f32("out_rgb.png", img, nx, ny, 3);
     free(img);
     /* read as gray, and save */
-    img = read_png_f32_gray("in.png", &nx, &ny);
-    write_png_f32("out_gray.png", img, nx, ny, 1);
+    img = io_png_read_f32_gray("in.png", &nx, &ny);
+    io_png_write_f32("out_gray.png", img, nx, ny, 1);
     free(img);
 
     return EXIT_SUCCESS;
