@@ -50,7 +50,7 @@
 #define PNG_SIG_LEN 4
 
 /* internal only datatype identifiers */
-#define IO_PNG_U8  0x0001       /* 8bit unsigned integer */
+#define IO_PNG_U8  0x0001       /*  8bit unsigned integer */
 #define IO_PNG_F32 0x0002       /* 32bit float */
 
 /*
@@ -103,14 +103,15 @@ static void *io_png_read_abort(FILE * fp,
  * @param fname PNG file name, "-" means stdin
  * @param nxp, nyp, ncp pointers to variables to be filled
  *        with the number of columns, lines and channels of the image
- * @param transform a PNG_TRANSFORM to be added to the default read transforms
+ * @param png_transform a PNG_TRANSFORM flag to be added to the
+ *        default libpng read transforms
  * @param dtype identifier for the data type to be used for output
  * @return pointer to an allocated array of pixels,
  *         or NULL if an error happens
  */
 static void *io_png_read_raw(const char *fname,
                              size_t * nxp, size_t * nyp, size_t * ncp,
-                             int transform, int dtype)
+                             int png_transform, int dtype)
 {
     png_byte png_sig[PNG_SIG_LEN];
     png_structp png_ptr;
@@ -175,10 +176,10 @@ static void *io_png_read_raw(const char *fname,
      * PNG_TRANSFORM_PACKING       expand 1, 2 and 4-bit
      *                             samples to bytes
      */
-    transform |= (PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING);
+    png_transform |= (PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING);
 
     /* read in the entire image at once */
-    png_read_png(png_ptr, info_ptr, transform, NULL);
+    png_read_png(png_ptr, info_ptr, png_transform, NULL);
 
     /* get image informations */
     *nxp = (size_t) png_get_image_width(png_ptr, info_ptr);
@@ -261,8 +262,8 @@ static void *io_png_read_raw(const char *fname,
  * @return pointer to an allocated unsigned char array of pixels,
  *         or NULL if an error happens
  */
-unsigned char *io_png_read(const char *fname,
-                           size_t * nxp, size_t * nyp, size_t * ncp)
+unsigned char *io_png_read_u8(const char *fname,
+			      size_t * nxp, size_t * nyp, size_t * ncp)
 {
     /* read the image as unsigned char */
     return (unsigned char *) io_png_read_raw(fname, nxp, nyp, ncp,
@@ -294,20 +295,17 @@ unsigned char *io_png_read_u8_rgb(const char *fname, size_t * nxp,
     else
     {
         /* convert to RGB */
-        unsigned char *ptr_r, *ptr_g, *ptr_b, *ptr_end;
+	size_t i, size;
 
         /* resize the image */
-        img = realloc(img, 3 * *nxp * *nyp * sizeof(unsigned char));
+	size = *nxp * *nyp;
+        img = realloc(img, 3 * size * sizeof(unsigned char));
 
         /* gray->RGB conversion */
-        ptr_r = img;
-        ptr_end = ptr_r + *nxp * *nyp;
-        ptr_g = img + *nxp * *nyp;
-        ptr_b = img + 2 * *nxp * *nyp;
-        while (ptr_r < ptr_end)
+	for (i=0; i<size; i++)
         {
-            *ptr_g++ = *ptr_r;
-            *ptr_b++ = *ptr_r++;
+            img[size + i] = img[i];
+            img[2 * size + i] = img[i];
         }
         return img;
     }
@@ -337,7 +335,7 @@ unsigned char *io_png_read_u8_gray(const char *fname,
     else
     {
         /* convert to gray */
-        unsigned char *ptr_r, *ptr_g, *ptr_b, *ptr_gray, *ptr_end;
+	size_t i, size;
 
         /*
          * RGB->gray conversion
@@ -345,17 +343,13 @@ unsigned char *io_png_read_u8_gray(const char *fname,
          * integer approximation of
          * Y = 0.212671 * R + 0.715160 * G + 0.072169 * B
          */
-        ptr_r = img;
-        ptr_g = img + *nxp * *nyp;
-        ptr_b = img + 2 * *nxp * *nyp;
-        ptr_gray = img;
-        ptr_end = ptr_gray + *nxp * *nyp;
-        while (ptr_gray < ptr_end)
-            *ptr_gray++ = (unsigned char) (6969 * *ptr_r++
-                                           + 23434 * *ptr_g++
-                                           + 2365 * *ptr_b++) / 32768;
+	size = *nxp * *nyp;
+	for (i=0; i<size; i++)
+	    img[i] = (unsigned char) (6969 * img[i]
+				      + 23434 * img[size + i]
+				      + 2365 * img[2 * size + i]) / 32768;
         /* resize and return the image */
-        img = realloc(img, *nxp * *nyp * sizeof(unsigned char));
+	img = realloc(img, size * sizeof(unsigned char));
         return img;
     }
 }
