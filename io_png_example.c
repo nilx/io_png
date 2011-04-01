@@ -34,8 +34,7 @@ int main()
     img = io_png_read_f32("in.png", &nx, &ny, &nc);
 
     /* if img == NULL, there was an error while reading */
-    if (NULL == img)
-    {
+    if (NULL == img) {
         fprintf(stderr, "failed to read the image in.png\n");
         abort();
     }
@@ -50,8 +49,7 @@ int main()
      * read_png_f32_rgb() instead of read_png_f32()
      */
 
-    if (3 <= nc)
-    {
+    if (3 <= nc) {
         /*
          * the img array layout is RRRR...GGGG...BBBB...
          * pointers can be set for direct access to each channel
@@ -90,8 +88,7 @@ int main()
     }
 
     /* write the image */
-    if (0 != io_png_write_f32("out.png", img, nx, ny, nc))
-    {
+    if (0 != io_png_write_f32("out.png", img, nx, ny, nc)) {
         fprintf(stderr, "failed to write the image out.png\n");
         abort();
     }
