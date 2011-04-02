@@ -21,7 +21,7 @@
  * @li read a PNG file as a deinterlaced 8bit integer or float array
  * @li write a 8bit integer or float array to a PNG file
  *
- * Multi-channel images are handled : grey, grey+alpha, rgb and
+ * Multi-channel images are handled: grey, grey+alpha, rgb and
  * rgb+alpha, as well as on-the-fly color model conversion.
  *
  * @todo handle lossless 16bit data
@@ -63,7 +63,7 @@ static char io_png_tag[] = "using io_png " IO_PNG_VERSION;
  * @brief helps tracking versions, via the string tag inserted into
  * the library
  *
- * This function is not exopected to be used in real-world programs.
+ * This function is not expected to be used in real-world programs.
  *
  * @return a pointer to a version info string
  */
@@ -118,7 +118,7 @@ static void *io_png_read_raw(const char *fname,
     png_infop info_ptr;
     png_bytepp row_pointers;
     png_bytep row_ptr;
-    /* volatile : because of setjmp/longjmp */
+    /* volatile: because of setjmp/longjmp */
     FILE *volatile fp = NULL;
     void *data = NULL;
     unsigned char *data_u8 = NULL;
@@ -500,7 +500,7 @@ static int io_png_write_raw(const char *fname, const void *data,
     png_byte *idata = NULL, *idata_ptr = NULL;
     png_bytep *row_pointers = NULL;
     png_byte bit_depth;
-    /* volatile : because of setjmp/longjmp */
+    /* volatile: because of setjmp/longjmp */
     FILE *volatile fp;
     const unsigned char *data_u8 = NULL;
     const unsigned char *data_u8_ptr = NULL;

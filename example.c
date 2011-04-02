@@ -2,7 +2,7 @@
  * This file shows how to use io_png.c. It is released in the public
  * domain and as such comes with no copyright requirement.
  *
- * compile with : cc io_png_example.c io_png.c -lpng
+ * compile with: cc example.c io_png.c -lpng
  */
 
 #include <stdlib.h>
@@ -40,7 +40,7 @@ int main()
     }
 
     /* nx, ny and nc hols the image sizes */
-    printf("image size : %i x %i, %i channels\n",
+    printf("image size: %i x %i, %i channels\n",
            (int) nx, (int) ny, (int) nc);
 
     /*
@@ -112,7 +112,7 @@ int main()
 }
 
 /**
- * @mainpage io_png : simplified front-end to libpng
+ * @mainpage io_png: simplified front-end to libpng
  *
  * README.txt:
  * @verbinclude README.txt

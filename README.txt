@@ -1,4 +1,4 @@
-% io_png : simplified front-end to libpng
+% io_png: simplified front-end to libpng
 
 * overview
 * license
@@ -59,25 +59,31 @@ collected via pointer parameters.
 The two main front-end functions are, depending of the data type you want
 to use:
 
-* read_png_u8() : read a PNG image as an unsigned char array
+* io_png_read_u8():
+  read a PNG image as an unsigned char array
   - 16bit images are converted to 8bit with precision loss
   - 1, 2 and 4bit images are converted to 8bit without precision loss
-* read_png_f32() : read a PNG image as a float array
+* io_png_read_f32():
+  read a PNG image as a float array
   - 16bit images are first converted to 8bit with precision loss
   - integer values are then converted to float
 
 These functions have the same syntax:
 
-    read_png_xxx(fname, &nx, &ny, &nc)
+    io_png_read_xxx(fname, &nx, &ny, &nc)
     - fname: file name; the standard input stream is used if fname is "-"
     - nx, ny, nc: variables to fill with the image size
 
 Four secondary read functions can be used to force a color model:
 
-* read_png_u8_rgb() : convert gray images to RGB and strip the alpha channel
-* read_png_u8_gray() : convert RGB images to gray and strip the alpha channel
-* read_png_f32_rgb() : convert gray images to RGB and strip the alpha channel
-* read_png_f32_gray() : convert RGB images to gray and strip the alpha channel
+* io_png_read_u8_rgb():
+  convert gray images to RGB and strip the alpha channel
+* io_png_read_u8_gray():
+  convert RGB images to gray and strip the alpha channel
+* io_png_read_f32_rgb():
+  convert gray images to RGB and strip the alpha channel
+* io_png_read_f32_gray():
+  convert RGB images to gray and strip the alpha channel
 
 These functions have the same syntax as the previous ones, except that
 they don't need the &nc parameter.
@@ -88,20 +94,20 @@ A PNG image is written from a single array, with the same layout as
 the one received from the read functions.
 
 2 front-end functions are available; they all have the same syntax,
-write_png_xxx(fname, data, nx, ny, nc):
+io_png_write_xxx(fname, data, nx, ny, nc):
     - fname: file name, the standard output stream is used if fname is "-"
     - data: image array
     - nx, ny, nc: image size
 
-* write_png_u8() : write a PNG image from an unsigned char array
-* write_png_f32() : write a PNG image from a float array
+* io_png_write_u8(): write a PNG image from an unsigned char array
+* io_png_write_f32(): write a PNG image from a float array
   - the array values are first rounded,
   - then limited to [0..255], with values lower than 0 set to 0 and
     values higher than 255 set to 255
 
 ## EXAMPLE
 
-see io_png_example.c
+see example.c
 
 # COMPILATION
 
@@ -123,8 +129,8 @@ build and include libpng in your program:
   files being linked into your program
 
 This is automatically handled in the provided makefile for the example
-code io_png_example.c; simply use the `make LOCAL_LIBS=1` command
-instead of `make`.
+code example.c; simply use the `make LOCAL_LIBS=1` command instead of
+`make`.
 
 # TODO
 

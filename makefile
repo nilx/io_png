@@ -6,7 +6,7 @@
 # offered as-is, without any warranty.
 
 # source code, C language
-CSRC	= io_png.c io_png_example.c
+CSRC	= io_png.c example.c
 
 # source code, all languages (only C here)
 SRC	= $(CSRC)
@@ -15,7 +15,7 @@ OBJ	= $(CSRC:.c=.o)
 # binary executable program
 BIN	= example
 
-# default target : the binary executable program
+# default target: the binary executable program
 default: $(BIN)
 
 # standard C compiler optimization options
