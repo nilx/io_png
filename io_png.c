@@ -291,7 +291,8 @@ unsigned char *io_png_read_u8_rgb(const char *fname, size_t * nxp,
 
         /* resize the image */
         size = *nxp * *nyp;
-        img = realloc(img, 3 * size * sizeof(unsigned char));
+        img = (unsigned char *)
+            realloc(img, 3 * size * sizeof(unsigned char));
 
         /* gray->RGB conversion */
         for (i = 0; i < size; i++) {
@@ -339,7 +340,7 @@ unsigned char *io_png_read_u8_gray(const char *fname,
                                       + 23434 * img[size + i]
                                       + 2365 * img[2 * size + i]) / 32768;
         /* resize and return the image */
-        img = realloc(img, size * sizeof(unsigned char));
+        img = (unsigned char *) realloc(img, size * sizeof(unsigned char));
         return img;
     }
 }
@@ -390,7 +391,7 @@ float *io_png_read_f32_rgb(const char *fname, size_t * nxp, size_t * nyp)
         float *ptr_r, *ptr_g, *ptr_b, *ptr_end;
 
         /* resize the image */
-        img = realloc(img, 3 * *nxp * *nyp * sizeof(float));
+        img = (float *) realloc(img, 3 * *nxp * *nyp * sizeof(float));
 
         /* gray->RGB conversion */
         ptr_r = img;
@@ -444,7 +445,7 @@ float *io_png_read_f32_gray(const char *fname, size_t * nxp, size_t * nyp)
                                    + 23434 * *ptr_g++
                                    + 2365 * *ptr_b++) / 32768;
         /* resize and return the image */
-        img = realloc(img, *nxp * *nyp * sizeof(float));
+        img = (float *) realloc(img, *nxp * *nyp * sizeof(float));
         return img;
     }
 }
