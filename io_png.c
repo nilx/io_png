@@ -344,9 +344,9 @@ unsigned char *io_png_read_u8_gray(const char *fname,
         img_g = img + size;
         img_b = img + 2 * size;
         for (i = 0; i < size; i++)
-            img[i] = (unsigned char) (6969 * img_r[i]
-                                      + 23434 * img_g[i]
-                                      + 2365 * img_b[i]) / 32768;
+            img[i] = (unsigned char) ((6969 * img_r[i]
+                                       + 23434 * img_g[i]
+                                       + 2365 * img_b[i]) / 32768);
         /* resize and return the image */
         img = (unsigned char *) realloc(img, size * sizeof(unsigned char));
         return img;
