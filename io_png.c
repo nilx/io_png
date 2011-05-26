@@ -388,19 +388,16 @@ float *io_png_read_f32_rgb(const char *fname, size_t * nxp, size_t * nyp)
         return img;
     else {
         /* convert to RGB */
-        float *ptr_r, *ptr_g, *ptr_b, *ptr_end;
+        size_t i, size;
 
         /* resize the image */
-        img = (float *) realloc(img, 3 * *nxp * *nyp * sizeof(float));
+        size = *nxp * *nyp;
+        img = (float *) realloc(img, 3 * size * sizeof(float));
 
         /* gray->RGB conversion */
-        ptr_r = img;
-        ptr_end = ptr_r + *nxp * *nyp;
-        ptr_g = img + *nxp * *nyp;
-        ptr_b = img + 2 * *nxp * *nyp;
-        while (ptr_r < ptr_end) {
-            *ptr_g++ = *ptr_r;
-            *ptr_b++ = *ptr_r++;
+        for (i = 0; i < size; i++) {
+            img[size + i] = img[i];
+            img[2 * size + i] = img[i];
         }
         return img;
     }
@@ -427,25 +424,19 @@ float *io_png_read_f32_gray(const char *fname, size_t * nxp, size_t * nyp)
         return img;
     else {
         /* convert to gray */
-        float *ptr_r, *ptr_g, *ptr_b, *ptr_gray, *ptr_end;
+        size_t i, size;
 
         /*
          * RGB->gray conversion
-         * Y = (6969 * R + 23434 * G + 2365 * B)/32768
-         * integer approximation of
          * Y = 0.212671 * R + 0.715160 * G + 0.072169 * B
          */
-        ptr_r = img;
-        ptr_g = img + *nxp * *nyp;
-        ptr_b = img + 2 * *nxp * *nyp;
-        ptr_gray = img;
-        ptr_end = ptr_gray + *nxp * *nyp;
-        while (ptr_gray < ptr_end)
-            *ptr_gray++ = (float) (6969 * *ptr_r++
-                                   + 23434 * *ptr_g++
-                                   + 2365 * *ptr_b++) / 32768;
+        size = *nxp * *nyp;
+        for (i = 0; i < size; i++)
+            img[i] = (float) (0.212671 * img[i]
+                              + 0.715160 * img[size + i]
+                              + 0.072169 * img[2 * size + i]);
         /* resize and return the image */
-        img = (float *) realloc(img, *nxp * *nyp * sizeof(float));
+        img = (float *) realloc(img, size * sizeof(float));
         return img;
     }
 }
