@@ -288,16 +288,20 @@ unsigned char *io_png_read_u8_rgb(const char *fname, size_t * nxp,
     else {
         /* convert to RGB */
         size_t i, size;
+        unsigned char *img_r, *img_g, *img_b;
 
         /* resize the image */
         size = *nxp * *nyp;
         img = (unsigned char *)
             realloc(img, 3 * size * sizeof(unsigned char));
+        img_r = img;
+        img_g = img + size;
+        img_b = img + 2 * size;
 
         /* gray->RGB conversion */
         for (i = 0; i < size; i++) {
-            img[size + i] = img[i];
-            img[2 * size + i] = img[i];
+            img_g[i] = img_r[i];
+            img_b[i] = img_r[i];
         }
         return img;
     }
@@ -327,6 +331,7 @@ unsigned char *io_png_read_u8_gray(const char *fname,
     else {
         /* convert to gray */
         size_t i, size;
+        unsigned char *img_r, *img_g, *img_b;
 
         /*
          * RGB->gray conversion
@@ -335,10 +340,13 @@ unsigned char *io_png_read_u8_gray(const char *fname,
          * Y = 0.212671 * R + 0.715160 * G + 0.072169 * B
          */
         size = *nxp * *nyp;
+        img_r = img;
+        img_g = img + size;
+        img_b = img + 2 * size;
         for (i = 0; i < size; i++)
-            img[i] = (unsigned char) (6969 * img[i]
-                                      + 23434 * img[size + i]
-                                      + 2365 * img[2 * size + i]) / 32768;
+            img[i] = (unsigned char) (6969 * img_r[i]
+                                      + 23434 * img_g[i]
+                                      + 2365 * img_b[i]) / 32768;
         /* resize and return the image */
         img = (unsigned char *) realloc(img, size * sizeof(unsigned char));
         return img;
@@ -389,15 +397,19 @@ float *io_png_read_f32_rgb(const char *fname, size_t * nxp, size_t * nyp)
     else {
         /* convert to RGB */
         size_t i, size;
+        float *img_r, *img_g, *img_b;
 
         /* resize the image */
         size = *nxp * *nyp;
         img = (float *) realloc(img, 3 * size * sizeof(float));
+        img_r = img;
+        img_g = img + size;
+        img_b = img + 2 * size;
 
         /* gray->RGB conversion */
         for (i = 0; i < size; i++) {
-            img[size + i] = img[i];
-            img[2 * size + i] = img[i];
+            img_g[i] = img_r[i];
+            img_b[i] = img_r[i];
         }
         return img;
     }
@@ -425,16 +437,20 @@ float *io_png_read_f32_gray(const char *fname, size_t * nxp, size_t * nyp)
     else {
         /* convert to gray */
         size_t i, size;
+        float *img_r, *img_g, *img_b;
 
         /*
          * RGB->gray conversion
          * Y = 0.212671 * R + 0.715160 * G + 0.072169 * B
          */
         size = *nxp * *nyp;
+        img_r = img;
+        img_g = img + size;
+        img_b = img + 2 * size;
         for (i = 0; i < size; i++)
-            img[i] = (float) (0.212671 * img[i]
-                              + 0.715160 * img[size + i]
-                              + 0.072169 * img[2 * size + i]);
+            img[i] = (float) (0.212671 * img_r[i]
+                              + 0.715160 * img_g[i]
+                              + 0.072169 * img_b[i]);
         /* resize and return the image */
         img = (float *) realloc(img, size * sizeof(float));
         return img;
