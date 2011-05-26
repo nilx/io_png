@@ -20,7 +20,7 @@ srcdoc	: $(SRC)
 .PHONY	: lint
 lint	: lint.flag
 lint.flag	: $(CSRC)
-	splint -weak $?
+	for FILE in $?; do splint -weak -I. $$FILE; done
 	touch $@
 
 # cleanup the source code

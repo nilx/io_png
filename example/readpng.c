@@ -13,7 +13,7 @@
 /* include the io_png prototypes */
 #include "io_png.h"
 
-int main()
+int main(int argc, char **argv)
 {
     /*
      * number of columns, lines and channels of the image
@@ -30,8 +30,18 @@ int main()
 
     float *img = NULL;
 
+    /*
+     * the file to read is given as the first command-line argument,
+     * the one to write is the second
+     */
+
+    if (3 > argc) {
+        fprintf(stderr, "syntax: %s in.png out.png\n", argv[0]);
+        abort();
+    }
+
     /* read the image */
-    img = io_png_read_f32("in.png", &nx, &ny, &nc);
+    img = io_png_read_f32(argv[1], &nx, &ny, &nc);
 
     /* if img == NULL, there was an error while reading */
     if (NULL == img) {
@@ -39,7 +49,8 @@ int main()
         abort();
     }
 
-    /* nx, ny and nc hols the image sizes */
+    /* nx, ny and nc hold the image sizes */
+    printf("image file: %s\n", argv[1]);
     printf("image size: %i x %i, %i channels\n",
            (int) nx, (int) ny, (int) nc);
 
@@ -88,32 +99,24 @@ int main()
     }
 
     /* write the image */
-    if (0 != io_png_write_f32("out.png", img, nx, ny, nc)) {
-        fprintf(stderr, "failed to write the image out.png\n");
+    if (0 != io_png_write_f32(argv[2], img, nx, ny, nc)) {
+        fprintf(stderr, "failed to write the image %s\n", argv[2]);
         abort();
     }
     free(img);
 
     /*
      * you can also use special read functions
-     * to handle colorspace
-     * conversion
+     * to handle colorspace conversion
      */
     /* read as RGB, and save */
-    img = io_png_read_f32_rgb("in.png", &nx, &ny);
-    io_png_write_f32("out_rgb.png", img, nx, ny, 3);
+    img = io_png_read_f32_rgb(argv[1], &nx, &ny);
+    io_png_write_f32(argv[2], img, nx, ny, 3);
     free(img);
     /* read as gray, and save */
-    img = io_png_read_f32_gray("in.png", &nx, &ny);
-    io_png_write_f32("out_gray.png", img, nx, ny, 1);
+    img = io_png_read_f32_gray(argv[1], &nx, &ny);
+    io_png_write_f32(argv[2], img, nx, ny, 1);
     free(img);
 
     return EXIT_SUCCESS;
 }
-
-/**
- * @mainpage io_png: simplified front-end to libpng
- *
- * README.txt:
- * @verbinclude README.txt
- */

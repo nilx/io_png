@@ -107,12 +107,12 @@ io_png_write_xxx(fname, data, nx, ny, nc):
 
 ## EXAMPLE
 
-see example.c
+see example/readpng.c and example/mmms.c
 
 # COMPILATION
 
-You can compile the example code io_png_example.c using the provided
-makefile, with the `make` command.
+You can compile the example codes located in the example folder using
+the provided makefile, with the `make` command.
 
 ## LOCAL LIBRARIES
 
@@ -129,8 +129,8 @@ build and include libpng in your program:
   files being linked into your program
 
 This is automatically handled in the provided makefile for the example
-code example.c; simply use the `make LOCAL_LIBS=1` command instead of
-`make`.
+code example/readpng.c; simply use the `make LOCAL_LIBS=1` command
+instead of `make`.
 
 # TODO
 

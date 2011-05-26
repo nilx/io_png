@@ -6,17 +6,13 @@
 # offered as-is, without any warranty.
 
 # source code, C language
-CSRC	= io_png.c example.c
-
+CSRC	= io_png.c example/readpng.c example/mmms.c 
 # source code, all languages (only C here)
 SRC	= $(CSRC)
 # object files (partial compilation)
 OBJ	= $(CSRC:.c=.o)
-# binary executable program
-BIN	= example
-
-# default target: the binary executable program
-default: $(BIN)
+# binary executable programs
+BIN	= example/readpng example/mmms
 
 # standard C compiler optimization options
 COPT	= -O2 -funroll-loops -fomit-frame-pointer
@@ -40,6 +36,9 @@ CFLAGS 	+= -I$(INCDIR) -DIO_PNG_LOCAL_LIBPNG
 LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
 endif
 
+# default target: the example programs
+default: example/readpng example/mmms
+
 # build the png library
 .PHONY	: libpng
 libpng	:
@@ -47,11 +46,11 @@ libpng	:
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c $(LIBDEPS)
-	$(CC) $< -c $(CFLAGS) -o $@
+	$(CC) $< -c $(CFLAGS) -I. -o $@
 
-# final link of the partially compiled files
-$(BIN)	: $(OBJ) $(LIBDEPS)
-	$(CC) $(OBJ) $(LDFLAGS) -o $@
+# final link of an example program
+example/%	: example/%.o io_png.o $(LIBDEPS)
+	$(CC) $< io_png.o $(LDFLAGS) -o $@
 
 # cleanup
 .PHONY	: clean distclean scrub
@@ -61,6 +60,7 @@ clean	:
 	$(MAKE) -C libs $@
 distclean	: clean
 	$(RM) $(BIN)
+	$(RM) -r srcdoc
 	$(MAKE) -C libs $@
 scrub	: distclean
 	$(MAKE) -C libs $@
