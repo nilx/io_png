@@ -38,4 +38,4 @@ $(ZLIB_DIR) : $(ZLIB_ARC)
 	touch $@
 
 $(ZLIB_ARC) :
-	curl -L $(ZLIB_URL) > $@
+	curl -L $(ZLIB_URL) > $@ || $(RM) $@
