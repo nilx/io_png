@@ -64,3 +64,34 @@ distclean	: clean
 	$(MAKE) -C libs $@
 scrub	: distclean
 	$(MAKE) -C libs $@
+
+################################################
+# extra tasks
+
+PROJECT	= io_png
+DATE	= $(shell date -u +%Y%m%d)
+RELEASE_TAG   = 0.$(DATE)
+
+.PHONY	: srcdoc lint beautify test release
+# source documentation
+srcdoc	: $(SRC)
+	doxygen doxygen.conf
+# code cleanup
+beautify	: $(CSRC)
+	for FILE in $^; do \
+		expand $$FILE | sed 's/[ \t]*$$//' > $$FILE.$$$$ \
+		&& indent -kr -i4 -l78 -nut -nce -sob -sc \
+			$$FILE.$$$$ -o $$FILE \
+		&& rm $$FILE.$$$$; \
+	done
+# static code analysis
+lint	: $(CSRC)
+	for FILE in $^; do splint -ansi-lib -weak -I. $$FILE; done;
+	for FILE in $^; do clang --analyze -ansi -I. $$FILE; done; $(RM) *.plist
+# code tests
+test	: $(CSRC)
+	sh -e test/run.sh && echo SUCCESS || ( echo ERROR; return 1)
+# release tarball
+release	: beautify lint test distclean
+	git archive --format=tar --prefix=$(PROJECT)-$(RELEASE_TAG)/ HEAD \
+	        | gzip > ../$(PROJECT)-$(RELEASE_TAG).tar.gz
