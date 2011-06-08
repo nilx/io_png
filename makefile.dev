@@ -16,13 +16,6 @@ RELEASE_TAG   = 0.$(DATE)
 srcdoc	: $(SRC)
 	doxygen doxygen.conf
 
-# check the source code
-.PHONY	: lint
-lint	: lint.flag
-lint.flag	: $(CSRC)
-	for FILE in $?; do splint -weak -I. $$FILE; done
-	touch $@
-
 # cleanup the source code
 .PHONY	: beautify
 beautify	: beautify.flag
@@ -33,6 +26,20 @@ beautify.flag	: $(CSRC)
 			$$FILE.$$$$ -o $$FILE \
 		&& rm $$FILE.$$$$; \
 	done
+	touch $@
+
+# check the source code
+.PHONY	: lint
+lint	: lint.flag
+lint.flag	: $(CSRC)
+	for FILE in $?; do splint -weak -I. $$FILE; done
+	touch $@
+
+# test the code
+.PHONY	: test
+test	: test.flag
+test.flag	: $(CSRC)
+	sh -e test/run.sh && echo SUCCESS || ( echo ERROR; return 1)
 	touch $@
 
 .PHONY	: release
