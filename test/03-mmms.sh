@@ -51,4 +51,6 @@ _log _test_mmms ga
 _log _test_mmms rgb
 _log _test_mmms rgba
 
+_log make distclean
+
 _log_clean
