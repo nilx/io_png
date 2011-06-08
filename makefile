@@ -75,7 +75,7 @@ RELEASE_TAG   = 0.$(DATE)
 .PHONY	: srcdoc lint beautify test release
 # source documentation
 srcdoc	: $(SRC)
-	doxygen doxygen.conf
+	doxygen doc/doxygen.conf
 # code cleanup
 beautify	: $(CSRC)
 	for FILE in $^; do \
