@@ -25,7 +25,6 @@
  * rgb+alpha, as well as on-the-fly color model conversion.
  *
  * @todo handle lossless 16bit data
- * @todo add a test suite
  * @todo internally handle RGB/gray conversion in io_png_read_raw()
  * @todo handle deinterlacing as a libpng transform function
  *
