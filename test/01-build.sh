@@ -25,31 +25,23 @@ _log make LOCAL_LIBS=1
 _log _test_run
 _log test "0" = "$( nm -u example/readpng | grep -c png_ )"
 
-echo "* standard C compiler, without options"
-_log make distclean
-_log make CC=cc CFLAGS=
-_log _test_run
-
-echo "* tcc C compiler, without options"
-_log make distclean
-_log make CC=tcc CFLAGS=
-_log _test_run
-
-echo "* clang C compiler, with and without options"
-_log make distclean
-_log make CC=clang
-_log _test_run
-_log make distclean
-_log make CC=clang CCFLAGS=
-_log _test_run
-
-echo "* standard C++ compiler, with and without options"
-_log make distclean
-_log make CC=c++
-_log _test_run
-_log make distclean
-_log make CC=c++ CCFLAGS=
-_log _test_run
+echo "* compiler support"
+for CC in cc c++ gcc g++ tcc clang icc; do
+    if which $CC; then
+	echo "* $CC compiler"
+	_log make distclean
+	_log make CC=$CC CFLAGS=
+	_log _test_run
+    fi
+done
+for CC in gcc g++ clang; do
+    if which $CC; then
+	echo "* $CC compiler with flags"
+	_log make distclean
+	_log make CC=$CC
+	_log _test_run
+    fi
+done
 
 _log make distclean
 
