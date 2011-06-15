@@ -6,13 +6,13 @@
 # offered as-is, without any warranty.
 
 # source code, C language
-CSRC	= io_png.c example/readpng.c example/mmms.c 
+CSRC	= io_png.c example/readpng.c example/mmms.c example/axpb.c 
 # source code, all languages (only C here)
 SRC	= $(CSRC)
 # object files (partial compilation)
 OBJ	= $(CSRC:.c=.o)
 # binary executable programs
-BIN	= example/readpng example/mmms
+BIN	= $(filter example/%, $(CSRC:.c=))
 
 # standard C compiler optimization options
 COPT	= -O2 -funroll-loops -fomit-frame-pointer
@@ -37,7 +37,7 @@ LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
 endif
 
 # default target: the example programs
-default: example/readpng example/mmms
+default: $(BIN)
 
 # build the png library
 .PHONY	: libpng
