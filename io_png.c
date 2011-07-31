@@ -333,7 +333,7 @@ unsigned char *io_png_read_u8_gray(const char *fname,
 
         /*
          * RGB->gray conversion
-         * Y = (6969 * R + 23434 * G + 2365 * B)/32768
+         * Y = (6969 * R + 23434 * G + 2365 * B) / 32768
          * integer approximation of
          * Y = 0.212671 * R + 0.715160 * G + 0.072169 * B
          */
@@ -342,9 +342,11 @@ unsigned char *io_png_read_u8_gray(const char *fname,
         img_g = img + size;
         img_b = img + 2 * size;
         for (i = 0; i < size; i++)
+            /* (1 << 14) is added for rounding instead of truncation */
             img[i] = (unsigned char) ((6969 * img_r[i]
                                        + 23434 * img_g[i]
-                                       + 2365 * img_b[i]) / 32768);
+                                       + 2365 * img_b[i]
+                                       + (1 << 14)) >> 15);
         /* resize and return the image */
         img = (unsigned char *) realloc(img, size * sizeof(unsigned char));
         return img;
