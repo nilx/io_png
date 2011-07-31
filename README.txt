@@ -135,15 +135,15 @@ instead of `make`.
 # TODO
 
 * handle 16bit data
-* add a test suite
 * cmake support
 * C++ wrappers (vector output, merged functions)
-* internally handle gray conversion and deinterlacing
-  (using libpng low-level interface)
+* implement proper gamma and RGBY conversion
+* handle data as float before re-quantization
+
 
 # COPYRIGHT
 
-Copyright 2010 Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
+Copyright 2011 Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
 
 Copying and distribution of this README file, with or without
 modification, are permitted in any medium without royalty provided

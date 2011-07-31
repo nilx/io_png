@@ -24,9 +24,11 @@
  * Multi-channel images are handled: grey, grey+alpha, rgb and
  * rgb+alpha, as well as on-the-fly color model conversion.
  *
- * @todo handle lossless 16bit data
- * @todo internally handle RGB/gray conversion in io_png_read_raw()
- * @todo handle deinterlacing as a libpng transform function
+ * @todo handle 16bit data
+ * @todo replace reb/gray with sRGB / Y references
+ * @todo implement sRGB gamma and better RGBY conversion
+ * @todo process the data as float before quantization
+ * @todo output float in [o..1]
  *
  * @author Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
  */
