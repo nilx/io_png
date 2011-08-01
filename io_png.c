@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <limits.h>
 
 /* option to use a local version of the libpng */
 #ifdef IO_PNG_LOCAL_LIBPNG
@@ -344,11 +345,25 @@ unsigned char *io_png_read_u8_gray(const char *fname,
         img_g = img + size;
         img_b = img + 2 * size;
         for (i = 0; i < size; i++)
+            /*
+             * if int is less than 24 bits, we use long ints,
+             * guaranteed to be >=32 bit
+             */
+#if (UINT_MAX>>24 == 0)
+#define CR 6969ul
+#define CG 23434ul
+#define CB 2365ul
+#else
+#define CR 6969u
+#define CG 23434u
+#define CB 2365u
+#endif
             /* (1 << 14) is added for rounding instead of truncation */
-            img[i] = (unsigned char) ((6969 * img_r[i]
-                                       + 23434 * img_g[i]
-                                       + 2365 * img_b[i]
-                                       + (1 << 14)) >> 15);
+            img[i] = (unsigned char) ((CR * img_r[i] + CG * img_g[i]
+                                       + CB * img_b[i] + (1 << 14)) >> 15);
+#undef CR
+#undef CG
+#undef CB
         /* resize and return the image */
         img = (unsigned char *) realloc(img, size * sizeof(unsigned char));
         return img;
