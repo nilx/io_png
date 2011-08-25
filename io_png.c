@@ -18,14 +18,14 @@
  * @brief PNG read/write simplified interface
  *
  * This is a front-end to libpng, with routines to:
- * @li read a PNG file as a deinterlaced 8bit integer or float array
+ * @li read a PNG file as a de-interlaced 8bit integer or float array
  * @li write a 8bit integer or float array to a PNG file
  *
- * Multi-channel images are handled: grey, grey+alpha, rgb and
+ * Multi-channel images are handled: gray, gray+alpha, rgb and
  * rgb+alpha, as well as on-the-fly color model conversion.
  *
  * @todo handle 16bit data
- * @todo replace reb/gray with sRGB / Y references
+ * @todo replace rgb/gray with sRGB / Y references
  * @todo implement sRGB gamma and better RGBY conversion
  * @todo process the data as float before quantization
  * @todo output float in [o..1]
@@ -50,7 +50,7 @@
 
 #define PNG_SIG_LEN 4
 
-/* internal only datatype identifiers */
+/* internal only data type identifiers */
 #define IO_PNG_U8  0x0001       /*  8bit unsigned integer */
 #define IO_PNG_F32 0x0002       /* 32bit float */
 
@@ -220,8 +220,8 @@ static void *io_png_read_raw(const char *fname,
 
     /*
      * allocate the output data RGB array
-     * deinterlace and convert png RGB RGB RGB 8bit to RRR GGG BBB
-     * the image is deinterlaced layer after layer
+     * de-interlace and convert png RGB RGB RGB 8bit to RRR GGG BBB
+     * the image is de-interlaced layer after layer
      * this generic loop also works for one single channel
      */
     size = *nxp * *nyp * *ncp;
@@ -274,7 +274,7 @@ static void *io_png_read_raw(const char *fname,
 /**
  * @brief read a PNG file into a 8bit integer array
  *
- * The array contains the deinterlaced channels.
+ * The array contains the de-interlaced channels.
  * 1, 2 and 4bit images are converted to 8bit.
  * 16bit images are previously downscaled to 8bit.
  *
@@ -378,7 +378,7 @@ unsigned char *io_png_read_u8_gray(const char *fname,
         img_b = img + 2 * size;
         for (i = 0; i < size; i++)
             /*
-             * if int is less than 24 bits, we use long ints,
+             * if int type is less than 24 bits, we use long ints,
              * guaranteed to be >=32 bit
              */
 #if (UINT_MAX>>24 == 0)

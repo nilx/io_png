@@ -20,7 +20,7 @@ simplified interface.
 
 # LICENSE
 
-io_png.c is distributed under a GPL3+ or BSD licence, at your
+io_png.c is distributed under a GPL3+ or BSD license, at your
 option. See the included copyright notice, conditions and disclaimer
 for details.
 
@@ -43,7 +43,7 @@ function declarations. You can use io_png.c with C or C++ code.
 ## READ
 
 A PNG image is read into a single array. For multiple channel images,
-the output array is deinterlaced and successively contains each
+the output array is de-interlaced and successively contains each
 channel. For example, a color image with 30 rows and 40 columns is
 read into a single array of 3600 cells, with:
 
