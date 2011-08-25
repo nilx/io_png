@@ -73,6 +73,34 @@ char *io_png_info(void)
     return io_png_tag;
 }
 
+/**
+ * local error structure
+ * see http://www.libpng.org/pub/png/book/chapter14.htmlpointer
+ */
+typedef struct _io_png_err_s {
+    jmp_buf jmpbuf;
+} io_png_err_t;
+
+/**
+ * local error handler
+ * see http://www.libpng.org/pub/png/book/chapter14.htmlpointer
+ */
+static void io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
+{
+    io_png_err_t *err_ptr;
+
+    fprintf(stderr, "libpng error: %s\n", msg);
+
+    err_ptr = (io_png_err_t *) png_get_error_ptr(png_ptr);
+    if (NULL == png_ptr) {
+        fprintf(stderr, "fatal unrecoverable error, terminating\n");
+        fflush(stderr);
+        abort();
+    }
+
+    longjmp(err_ptr->jmpbuf, 1);
+}
+
 /*
  * READ
  */
@@ -128,6 +156,8 @@ static void *io_png_read_raw(const char *fname,
     float *data_f32_ptr = NULL;
     size_t size;
     size_t i, j, k;
+    /* error structure */
+    io_png_err_t err;
 
     /* parameters check */
     if (NULL == fname || NULL == nxp || NULL == nyp || NULL == ncp)
@@ -148,21 +178,21 @@ static void *io_png_read_raw(const char *fname,
 
     /*
      * create and initialize the png_struct
-     * with the default stderr and error handling
+     * with local error handling
      */
     if (NULL == (png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
-                                                  NULL, NULL, NULL)))
+                                                  &err, &io_png_err_hdl,
+                                                  NULL)))
         return io_png_read_abort(fp, NULL, NULL);
 
     /* allocate/initialize the memory for image information */
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
         return io_png_read_abort(fp, &png_ptr, NULL);
 
-    /* set error handling */
-    if (0 != setjmp(png_jmpbuf(png_ptr)))
-        /* if we get here, we had a problem reading the file */
-        /* free all of the memory associated with the png_ptr and info_ptr */
-        return io_png_read_abort(fp, &png_ptr, &info_ptr);
+    /* handle read errors */
+    if (setjmp(err.jmpbuf))
+        /* if we get here, we had a problem reading from the file */
+        return io_png_read_abort(fp, &png_ptr, NULL);
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
@@ -539,6 +569,8 @@ static int io_png_write_raw(const char *fname, const void *data,
     int color_type, interlace, compression, filter;
     size_t size;
     size_t i, j, k;
+    /* error structure */
+    io_png_err_t err;
 
     /* parameters check */
     if (0 >= nx || 0 >= ny || 0 >= nc)
@@ -564,19 +596,20 @@ static int io_png_write_raw(const char *fname, const void *data,
 
     /*
      * create and initialize the png_struct
-     * with the default stderr and error handling
+     * with local error handling
      */
     if (NULL == (png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-                                                   NULL, NULL, NULL)))
+                                                   &err, &io_png_err_hdl,
+                                                   NULL)))
         return io_png_write_abort(fp, idata, row_pointers, NULL, NULL);
 
     /* allocate/initialize the memory for image information */
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
         return io_png_write_abort(fp, idata, row_pointers, &png_ptr, NULL);
 
-    /* set error handling */
-    if (0 != setjmp(png_jmpbuf(png_ptr)))
-        /* if we get here, we had a problem reading the file */
+    /* handle write errors */
+    if (0 != setjmp(err.jmpbuf))
+        /* if we get here, we had a problem writing to the file */
         return io_png_write_abort(fp, idata, row_pointers, &png_ptr,
                                   &info_ptr);
 
