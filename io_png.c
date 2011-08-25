@@ -59,7 +59,7 @@
  */
 
 /* string tag inserted into the binary */
-static char io_png_tag[] = "using io_png " IO_PNG_VERSION;
+static char _io_png_tag[] = "using io_png " IO_PNG_VERSION;
 /**
  * @brief helps tracking versions, via the string tag inserted into
  * the library
@@ -70,7 +70,7 @@ static char io_png_tag[] = "using io_png " IO_PNG_VERSION;
  */
 char *io_png_info(void)
 {
-    return io_png_tag;
+    return _io_png_tag;
 }
 
 /**
@@ -79,19 +79,19 @@ char *io_png_info(void)
  */
 typedef struct _io_png_err_s {
     jmp_buf jmpbuf;
-} io_png_err_t;
+} _io_png_err_t;
 
 /**
  * local error handler
  * see http://www.libpng.org/pub/png/book/chapter14.htmlpointer
  */
-static void io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
+static void _io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
 {
-    io_png_err_t *err_ptr;
+    _io_png_err_t *err_ptr;
 
     fprintf(stderr, "libpng error: %s\n", msg);
 
-    err_ptr = (io_png_err_t *) png_get_error_ptr(png_ptr);
+    err_ptr = (_io_png_err_t *) png_get_error_ptr(png_ptr);
     if (NULL == png_ptr) {
         fprintf(stderr, "fatal unrecoverable error, terminating\n");
         fflush(stderr);
@@ -114,9 +114,9 @@ static void io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
  *        ignored if NULL
  * @return NULL
  */
-static void *io_png_read_abort(FILE * fp,
-                               png_structp * png_ptr_p,
-                               png_infop * info_ptr_p)
+static void *_io_png_read_abort(FILE * fp,
+                                png_structp * png_ptr_p,
+                                png_infop * info_ptr_p)
 {
     png_destroy_read_struct(png_ptr_p, info_ptr_p, NULL);
     if (NULL != fp && stdin != fp)
@@ -156,8 +156,8 @@ static void *io_png_read_raw(const char *fname,
     float *data_f32_ptr = NULL;
     size_t size;
     size_t i, j, k;
-    /* error structure */
-    io_png_err_t err;
+    /* local error structure */
+    _io_png_err_t err;
 
     /* parameters check */
     if (NULL == fname || NULL == nxp || NULL == nyp || NULL == ncp)
@@ -174,25 +174,25 @@ static void *io_png_read_raw(const char *fname,
     /* read in some of the signature bytes and check this signature */
     if ((PNG_SIG_LEN != fread(png_sig, 1, PNG_SIG_LEN, fp))
         || 0 != png_sig_cmp(png_sig, (png_size_t) 0, PNG_SIG_LEN))
-        return io_png_read_abort(fp, NULL, NULL);
+        return _io_png_read_abort(fp, NULL, NULL);
 
     /*
      * create and initialize the png_struct
      * with local error handling
      */
     if (NULL == (png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
-                                                  &err, &io_png_err_hdl,
+                                                  &err, &_io_png_err_hdl,
                                                   NULL)))
-        return io_png_read_abort(fp, NULL, NULL);
+        return _io_png_read_abort(fp, NULL, NULL);
 
     /* allocate/initialize the memory for image information */
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
-        return io_png_read_abort(fp, &png_ptr, NULL);
+        return _io_png_read_abort(fp, &png_ptr, NULL);
 
     /* handle read errors */
     if (setjmp(err.jmpbuf))
         /* if we get here, we had a problem reading from the file */
-        return io_png_read_abort(fp, &png_ptr, NULL);
+        return _io_png_read_abort(fp, &png_ptr, NULL);
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
@@ -229,7 +229,7 @@ static void *io_png_read_raw(const char *fname,
     case IO_PNG_U8:
         if (NULL == (data_u8 =
                      (unsigned char *) malloc(size * sizeof(unsigned char))))
-            return io_png_read_abort(fp, &png_ptr, &info_ptr);
+            return _io_png_read_abort(fp, &png_ptr, &info_ptr);
         data = (void *) data_u8;
         for (k = 0; k < *ncp; k++) {
             /* channel loop */
@@ -247,7 +247,7 @@ static void *io_png_read_raw(const char *fname,
         break;
     case IO_PNG_F32:
         if (NULL == (data_f32 = (float *) malloc(size * sizeof(float))))
-            return io_png_read_abort(fp, &png_ptr, &info_ptr);
+            return _io_png_read_abort(fp, &png_ptr, &info_ptr);
         data = (void *) data_f32;
         for (k = 0; k < *ncp; k++) {
             /* channel loop */
@@ -266,7 +266,7 @@ static void *io_png_read_raw(const char *fname,
     }
 
     /* clean up and free any memory allocated, close the file */
-    (void) io_png_read_abort(fp, &png_ptr, &info_ptr);
+    (void) _io_png_read_abort(fp, &png_ptr, &info_ptr);
 
     return data;
 }
@@ -522,9 +522,10 @@ float *io_png_read_f32_gray(const char *fname, size_t * nxp, size_t * nyp)
  *        ignored if NULL
  * @return -1
  */
-static int io_png_write_abort(FILE * fp,
-                              png_byte * idata, png_bytep * row_pointers,
-                              png_structp * png_ptr_p, png_infop * info_ptr_p)
+static int _io_png_write_abort(FILE * fp,
+                               png_byte * idata, png_bytep * row_pointers,
+                               png_structp * png_ptr_p,
+                               png_infop * info_ptr_p)
 {
     png_destroy_write_struct(png_ptr_p, info_ptr_p);
     if (NULL != row_pointers)
@@ -570,7 +571,7 @@ static int io_png_write_raw(const char *fname, const void *data,
     size_t size;
     size_t i, j, k;
     /* error structure */
-    io_png_err_t err;
+    _io_png_err_t err;
 
     /* parameters check */
     if (0 >= nx || 0 >= ny || 0 >= nc)
@@ -589,29 +590,29 @@ static int io_png_write_raw(const char *fname, const void *data,
     /* allocate the interlaced array and row pointers */
     size = nx * ny * nc;
     if (NULL == (idata = (png_byte *) malloc(size * sizeof(png_byte))))
-        return io_png_write_abort(fp, NULL, NULL, NULL, NULL);
+        return _io_png_write_abort(fp, NULL, NULL, NULL, NULL);
 
     if (NULL == (row_pointers = (png_bytep *) malloc(ny * sizeof(png_bytep))))
-        return io_png_write_abort(fp, idata, NULL, NULL, NULL);
+        return _io_png_write_abort(fp, idata, NULL, NULL, NULL);
 
     /*
      * create and initialize the png_struct
      * with local error handling
      */
     if (NULL == (png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-                                                   &err, &io_png_err_hdl,
+                                                   &err, &_io_png_err_hdl,
                                                    NULL)))
-        return io_png_write_abort(fp, idata, row_pointers, NULL, NULL);
+        return _io_png_write_abort(fp, idata, row_pointers, NULL, NULL);
 
     /* allocate/initialize the memory for image information */
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
-        return io_png_write_abort(fp, idata, row_pointers, &png_ptr, NULL);
+        return _io_png_write_abort(fp, idata, row_pointers, &png_ptr, NULL);
 
     /* handle write errors */
     if (0 != setjmp(err.jmpbuf))
         /* if we get here, we had a problem writing to the file */
-        return io_png_write_abort(fp, idata, row_pointers, &png_ptr,
-                                  &info_ptr);
+        return _io_png_write_abort(fp, idata, row_pointers, &png_ptr,
+                                   &info_ptr);
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
@@ -699,7 +700,7 @@ static int io_png_write_raw(const char *fname, const void *data,
     png_write_end(png_ptr, info_ptr);
 
     /* clean up and free any memory allocated, close the file */
-    (void) io_png_write_abort(fp, idata, row_pointers, &png_ptr, &info_ptr);
+    (void) _io_png_write_abort(fp, idata, row_pointers, &png_ptr, &info_ptr);
 
     return 0;
 }

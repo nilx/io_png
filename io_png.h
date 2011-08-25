@@ -9,6 +9,8 @@ extern "C" {
 
 #include <stddef.h>
 
+/* io_png.c */
+char *io_png_info(void);
 unsigned char *io_png_read_u8(const char *fname, size_t *nxp, size_t *nyp, size_t *ncp);
 unsigned char *io_png_read_u8_rgb(const char *fname, size_t *nxp, size_t *nyp);
 unsigned char *io_png_read_u8_gray(const char *fname, size_t *nxp, size_t *nyp);
