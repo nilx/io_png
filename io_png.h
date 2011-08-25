@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define IO_PNG_VERSION "0.20110616"
+#define IO_PNG_VERSION "0.20110825"
 
 #include <stddef.h>
 
