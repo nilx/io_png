@@ -8,8 +8,8 @@
 # red:           min 54.000 max 255.000 mean 180.224 std 49.049
 # green:         min  3.000 max 248.000 mean  99.051 std 52.878
 # blue:          min  8.000 max 225.000 mean 105.410 std 34.058
-# rgb->gray,f32  min 18.509 max 246.183 mean 116.768 std 49.417
-# rgb->gray,u8:  min 19.000 max 246.000 mean 116.768 std 49.419
+# rgb->gray,f32  min 18.511 max 246.183 mean 116.771 std 49.417
+# rgb->gray,u8:  min 19.000 max 246.000 mean 116.772 std 49.418
 # gray:          min 19.000 max 246.000 mean 116.769 std 49.419
 # alpha:         min 0.000  max 255.000 mean 127.499 std 74.045
 _test_mmms() {
@@ -18,7 +18,7 @@ _test_mmms() {
     example/mmms data/lena_ga.png >> $TEMPFILE
     example/mmms data/lena_rgb.png >> $TEMPFILE
     example/mmms data/lena_rgba.png >> $TEMPFILE
-    test "53efcdd8df4888e6f1b37d76ea363828  $TEMPFILE" \
+    test "e483dc2043fdd8e662f6bc41140cdd4e  $TEMPFILE" \
 	= "$(md5sum $TEMPFILE)"
     rm -f $TEMPFILE
 }

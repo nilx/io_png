@@ -366,10 +366,14 @@ unsigned char *io_png_read_u8_gray(const char *fname,
 
         /*
          * RGB->gray conversion
-         * Y = (6966 * R + 23436 * G + 2366 * B) / 32768
+         * Y = (6968 * R + 23434 * G + 2366 * B) / 32768
          * integer approximation of
-         * Y = 0.2126 * R + 0.7152 * G + 0.0722 * B
-         * from ITU BT.709-5 (Rec 709)
+         * Y = Cr* R + Cg * G + Cb * B
+         * with
+         * Cr = 0.212639005871510
+         * Cg = 0.715168678767756
+         * Cb = 0.072192315360734
+         * derived from ITU BT.709-5 (Rec 709) sRGB and D65 definitions
          * http://www.itu.int/rec/R-REC-BT.709/en
          */
         size = *nxp * *nyp;
@@ -382,12 +386,12 @@ unsigned char *io_png_read_u8_gray(const char *fname,
              * guaranteed to be >=32 bit
              */
 #if (UINT_MAX>>24 == 0)
-#define CR 6966ul
-#define CG 23436ul
+#define CR 6968ul
+#define CG 23434ul
 #define CB 2366ul
 #else
-#define CR 6966u
-#define CG 23436u
+#define CR 6968u
+#define CG 23434u
 #define CB 2366u
 #endif
             /* (1 << 14) is added for rounding instead of truncation */
@@ -490,8 +494,12 @@ float *io_png_read_f32_gray(const char *fname, size_t * nxp, size_t * nyp)
 
         /*
          * RGB->gray conversion
-         * Y = 0.2126 * R + 0.7152 * G + 0.0722 * B
-         * from ITU BT.709-5 (Rec 709)
+         * Y = Cr* R + Cg * G + Cb * B
+         * with
+         * Cr = 0.212639005871510
+         * Cg = 0.715168678767756
+         * Cb = 0.072192315360734
+         * derived from ITU BT.709-5 (Rec 709) sRGB and D65 definitions
          * http://www.itu.int/rec/R-REC-BT.709/en
          */
         size = *nxp * *nyp;
@@ -499,9 +507,9 @@ float *io_png_read_f32_gray(const char *fname, size_t * nxp, size_t * nyp)
         img_g = img + size;
         img_b = img + 2 * size;
         for (i = 0; i < size; i++)
-            img[i] = (float) (0.2126 * img_r[i]
-                              + 0.7152 * img_g[i]
-                              + 0.0722 * img_b[i]);
+            img[i] = (float) (0.212639005871510 * img_r[i]
+                              + 0.715168678767756 * img_g[i]
+                              + 0.072192315360734 * img_b[i]);
         /* resize and return the image */
         img = (float *) realloc(img, size * sizeof(float));
         return img;
