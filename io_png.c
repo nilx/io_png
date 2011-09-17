@@ -152,6 +152,74 @@ static void _io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
     longjmp(err_ptr->jmpbuf, 1);
 }
 
+/**
+ * @brief interlace a png_byte array
+ *
+ * @param data array to interlace
+ * @param csize array size per channel
+ * @param nc number of channels to interlace
+ *
+ * @todo less memory copy, real in-place method
+ */
+static void _io_png_interlace(png_byte * data, size_t csize, size_t nc)
+{
+    size_t i, size;
+    png_byte *tmp;
+
+    if (NULL == data || 0 == csize || 0 == nc)
+        _IO_PNG_ABORT("bad parameters");
+    if (1 == nc || 1 == csize)
+        /* nothing to do */
+        return;
+
+    size = nc * csize;
+    tmp = _IO_PNG_SAFE_MALLOC(size, png_byte);
+    for (i = 0; i < size; i++)
+        /*
+         * set the i-th element of tmp, interlaced
+         * its channel is i % nc
+         * its position in this channel is i / nc
+         */
+        tmp[i] = data[i % nc * csize + i / nc];
+
+    memcpy(data, tmp, size * sizeof(png_byte));
+    free(tmp);
+
+    return;
+}
+
+/**
+ * @brief deinterlace a png_byte array
+ *
+ * @param data array to deinterlace
+ * @param csize array size per channel
+ * @param nc number of channels to deinterlace
+ *
+ * @todo less memory copy, real in-place method
+ */
+static void _io_png_deinterlace(png_byte * data, size_t csize, size_t nc)
+{
+    size_t i, size;
+    png_byte *tmp;
+
+    if (NULL == data || 0 == csize || 0 == nc)
+        _IO_PNG_ABORT("bad parameters");
+    if (1 == nc || 1 == csize)
+        /* nothing to do */
+        return;
+
+    size = nc * csize;
+    tmp = _IO_PNG_SAFE_MALLOC(size, png_byte);
+    for (i = 0; i < size; i++)
+        /* see _io_png_interlace() */
+        tmp[i % nc * csize + i / nc] = data[i];
+
+    memcpy(data, tmp, size * sizeof(png_byte));
+    free(tmp);
+
+    return;
+}
+
 /*
  * READ
  */
@@ -177,9 +245,11 @@ static void *io_png_read_raw(const char *fname,
     png_structp png_ptr;
     png_infop info_ptr;
     png_bytepp row_pointers;
+    png_byte *png_data;
     /* volatile: because of setjmp/longjmp */
     FILE *volatile fp = NULL;
     size_t size;
+    size_t i;
     /* local error structure */
     _io_png_err_t err;
 
@@ -239,6 +309,22 @@ static void *io_png_read_raw(const char *fname,
     *nyp = (size_t) png_get_image_height(png_ptr, info_ptr);
     *ncp = (size_t) png_get_channels(png_ptr, info_ptr);
     row_pointers = png_get_rows(png_ptr, info_ptr);
+    size = *nxp * *nyp * *ncp;
+
+    /* dump the rows in a continuous array */
+    /* todo: first check if the data is continuous via
+     * row_pointers */
+    /* todo: check type width */
+    png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
+    for (i = 0; i < *nyp; i++)
+        memcpy((void *) (png_data + i * *nxp * *ncp),
+               (void *) row_pointers[i], *nxp * *ncp * sizeof(png_byte));
+
+    _io_png_deinterlace(png_data, *nxp * *nyp, *ncp);
+
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    if (stdin != fp)
+        (void) fclose(fp);
 
     /*
      * allocate the output data RGB array
@@ -247,55 +333,28 @@ static void *io_png_read_raw(const char *fname,
      * this loop order is not the fastest but it is generic and also
      * works for one single channel
      */
-    size = *nxp * *nyp * *ncp;
     switch (dtype) {
     case IO_PNG_UCHAR:
         {
-            unsigned char *data = NULL, *data_ptr = NULL;
-            png_bytep row_ptr;
-            size_t i, j, k;
+            unsigned char *data;
+
             data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
-            for (k = 0; k < *ncp; k++) {
-                /* channel loop */
-                data_ptr = data + (size_t) (*nxp * *nyp * k);
-                for (j = 0; j < *nyp; j++) {
-                    /* row loop */
-                    row_ptr = row_pointers[j] + k;
-                    for (i = 0; i < *nxp; i++) {
-                        /* pixel loop */
-                        *data_ptr++ = (unsigned char) *row_ptr;
-                        row_ptr += *ncp;
-                    }
-                }
-            }
-            png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-            if (stdin != fp)
-                (void) fclose(fp);
+            for (i = 0; i < size; i++)
+                data[i] = (unsigned char) png_data[i];
+
+            free(png_data);
             return (void *) data;
         }
         break;                  /* useless */
     case IO_PNG_FLT:
         {
-            float *data = NULL, *data_ptr = NULL;
-            png_bytep row_ptr;
-            size_t i, j, k;
+            float *data;
+
             data = _IO_PNG_SAFE_MALLOC(size, float);
-            for (k = 0; k < *ncp; k++) {
-                /* channel loop */
-                data_ptr = data + (size_t) (*nxp * *nyp * k);
-                for (j = 0; j < *nyp; j++) {
-                    /* row loop */
-                    row_ptr = row_pointers[j] + k;
-                    for (i = 0; i < *nxp; i++) {
-                        /* pixel loop */
-                        *data_ptr++ = (float) *row_ptr;
-                        row_ptr += *ncp;
-                    }
-                }
-            }
-            png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-            if (stdin != fp)
-                (void) fclose(fp);
+            for (i = 0; i < size; i++)
+                data[i] = (float) png_data[i];
+
+            free(png_data);
             return (void *) data;
         }
         break;                  /* useless */
@@ -664,10 +723,9 @@ static void io_png_write_raw(const char *fname, const png_byte * png_data,
 void io_png_write_uchar(const char *fname, const unsigned char *data,
                         size_t nx, size_t ny, size_t nc)
 {
-    const unsigned char *data_ptr;
-    png_byte *png_data, *png_data_ptr;
+    png_byte *png_data;
     size_t size;
-    size_t i, j, k;
+    size_t i;
 
     /* parameters check */
     if (0 >= nx || 0 >= ny || 0 >= nc)
@@ -679,25 +737,13 @@ void io_png_write_uchar(const char *fname, const unsigned char *data,
     size = nx * ny * nc;
     png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
 
-    /*
-     * interlace RRR GGG BBB AAA to RGBA RGBA RGBA
-     * the image is interlaced layer after layer
-     * this loop order is not the fastest but it is generic and also
-     * works for one single channel
-     */
-    for (k = 0; k < nc; k++) {
-        /* channel loop */
-        data_ptr = data + (size_t) (nx * ny * k);
-        png_data_ptr = png_data + (size_t) k;
-        for (j = 0; j < ny; j++) {
-            /* row loop */
-            for (i = 0; i < nx; i++) {
-                /* pixel loop */
-                *png_data_ptr = (png_byte) * data_ptr++;
-                png_data_ptr += nc;
-            }
-        }
-    }
+    /* convert from unsigned char to png_byte */
+    /* todo: memcpy() if same type, real conversion if not */
+    for (i = 0; i < size; i++)
+        png_data[i] = (png_byte) data[i];
+
+    /* interlace RRR GGG BBB AAA to RGBA RGBA RGBA */
+    _io_png_interlace(png_data, nx * ny, nc);
 
     io_png_write_raw(fname, png_data,
                      (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc);
@@ -720,10 +766,9 @@ void io_png_write_uchar(const char *fname, const unsigned char *data,
 void io_png_write_flt(const char *fname, const float *data,
                       size_t nx, size_t ny, size_t nc)
 {
-    const float *data_ptr;
-    png_byte *png_data, *png_data_ptr;
+    png_byte *png_data;
     size_t size;
-    size_t i, j, k;
+    size_t i;
     float tmp;
 
     /* parameters check */
@@ -736,27 +781,14 @@ void io_png_write_flt(const char *fname, const float *data,
     size = nx * ny * nc;
     png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
 
-    /*
-     * interlace RRR GGG BBB AAA to RGBA RGBA RGBA
-     * the image is interlaced layer after layer
-     * this loop order is not the fastest but it is generic and also
-     * works for one single channel
-     */
-    for (k = 0; k < nc; k++) {
-        /* channel loop */
-        data_ptr = data + (size_t) (nx * ny * k);
-        png_data_ptr = png_data + (size_t) k;
-        for (j = 0; j < ny; j++) {
-            /* row loop */
-            for (i = 0; i < nx; i++) {
-                /* pixel loop */
-                tmp = floor(*data_ptr++ + .5);
-                *png_data_ptr = (png_byte) (tmp < 0. ? 0. :
-                                            (tmp > 255. ? 255. : tmp));
-                png_data_ptr += nc;
-            }
-        }
+    /* convert from float to png_byte */
+    for (i = 0; i < size; i++) {
+        tmp = floor(data[i] + .5);
+        png_data[i] = (png_byte) (tmp < 0. ? 0. : (tmp > 255. ? 255. : tmp));
     }
+
+    /* interlace RRR GGG BBB AAA to RGBA RGBA RGBA */
+    _io_png_interlace(png_data, nx * ny, nc);
 
     io_png_write_raw(fname, png_data,
                      (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc);
