@@ -80,6 +80,36 @@ char *io_png_info(void)
  */
 
 /**
+ * @brief abort() wrapper macro with an error message
+ *
+ * @todo file/line info
+ */
+#define _IO_PNG_ABORT(MSG) do {                                         \
+        fputs(MSG, stderr);                                             \
+    fflush(stderr);                                                     \
+    abort();                                                            \
+    } while (0);
+
+/**
+ * @brief safe malloc wrapper
+ * @todo verbose error message
+ */
+static void *_io_png_safe_malloc(size_t size)
+{
+    void *memptr;
+
+    if (NULL == (memptr = malloc(size)))
+        _IO_PNG_ABORT("not enough memory");
+    return memptr;
+}
+
+/**
+ * @brief safe malloc wrapper macro with safe casting
+ */
+#define _IO_PNG_SAFE_MALLOC(NB, TYPE) \
+    ((TYPE *) _io_png_safe_malloc((size_t) (NB) * sizeof(TYPE)))
+
+/**
  * @brief local error structure
  * see http://www.libpng.org/pub/png/book/chapter14.htmlpointer
  */
@@ -98,74 +128,11 @@ static void _io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
     fprintf(stderr, "libpng error: %s\n", msg);
 
     err_ptr = (_io_png_err_t *) png_get_error_ptr(png_ptr);
-    if (NULL == png_ptr) {
-        fprintf(stderr, "fatal unrecoverable error, terminating\n");
-        fflush(stderr);
-        abort();
-    }
+    if (NULL == png_ptr)
+        _IO_PNG_ABORT
+            ("fatal unrecoverable error in libpng calls, terminating");
 
     longjmp(err_ptr->jmpbuf, 1);
-}
-
-/**
- * @brief safe malloc wrapper
- * @todo verbose error message
- */
-static void *_io_png_safe_malloc(size_t size)
-{
-    void *memptr;
-
-    if (NULL == (memptr = malloc(size))) {
-        fprintf(stderr, "not enough memory\n");
-        abort();
-    }
-    return memptr;
-}
-
-/**
- * @brief safe malloc wrapper macro with safe casting
- */
-#define _IO_PNG_SAFE_MALLOC(NB, TYPE) \
-    ((TYPE *) _io_png_safe_malloc((size_t) (NB) * sizeof(TYPE)))
-
-/**
- * @brief cleanup the memory when a read operation fails
- *
- * @param fp file pointer to close, ignored if NULL
- * @param png_ptr_p, info_ptr_p, pointers to PNG structure pointers,
- *        ignored if NULL
- * @return NULL
- */
-static void *_io_png_read_cleanup(FILE * fp,
-                                  png_structp * png_ptr_p,
-                                  png_infop * info_ptr_p)
-{
-    png_destroy_read_struct(png_ptr_p, info_ptr_p, NULL);
-    if (NULL != fp && stdin != fp)
-        (void) fclose(fp);
-    return NULL;
-}
-
-/**
- * @brief cleanup the memory when a write operation fails
- *
- * @param fp file pointer to close, ignored if NULL
- * @param row_pointers array to free, ignored if NULL
- * @param png_ptr_p, info_ptr_p, pointers to PNG structure pointers,
- *        ignored if NULL
- * @return -1
- */
-static int _io_png_write_cleanup(FILE * fp,
-                                 png_bytep * row_pointers,
-                                 png_structp * png_ptr_p,
-                                 png_infop * info_ptr_p)
-{
-    png_destroy_write_struct(png_ptr_p, info_ptr_p);
-    if (NULL != row_pointers)
-        free(row_pointers);
-    if (NULL != fp && stdout != fp)
-        (void) fclose(fp);
-    return -1;
 }
 
 /*
@@ -183,8 +150,7 @@ static int _io_png_write_cleanup(FILE * fp,
  * @param png_transform a PNG_TRANSFORM flag to be added to the
  *        default libpng read transforms
  * @param dtype identifier for the data type to be used for output
- * @return pointer to an allocated array of pixels,
- *         or NULL if an error happens
+ * @return pointer to an allocated array of pixels, abort() on error
  */
 static void *io_png_read_raw(const char *fname,
                              size_t * nxp, size_t * nyp, size_t * ncp,
@@ -202,20 +168,20 @@ static void *io_png_read_raw(const char *fname,
 
     /* parameters check */
     if (NULL == fname || NULL == nxp || NULL == nyp || NULL == ncp)
-        return NULL;
+        _IO_PNG_ABORT("bad parameters");
     if (IO_PNG_UCHAR != dtype && IO_PNG_FLT != dtype)
-        return NULL;
+        _IO_PNG_ABORT("bad parameters");
 
     /* open the PNG input file */
     if (0 == strcmp(fname, "-"))
         fp = stdin;
     else if (NULL == (fp = fopen(fname, "rb")))
-        return NULL;
+        _IO_PNG_ABORT("failed to open file");
 
     /* read in some of the signature bytes and check this signature */
     if ((PNG_SIG_LEN != fread(png_sig, 1, PNG_SIG_LEN, fp))
         || 0 != png_sig_cmp(png_sig, (png_size_t) 0, PNG_SIG_LEN))
-        return _io_png_read_cleanup(fp, NULL, NULL);
+        _IO_PNG_ABORT("the file is not a PNG image");
 
     /*
      * create and initialize the png_struct and png_info structures
@@ -224,13 +190,13 @@ static void *io_png_read_raw(const char *fname,
     if (NULL == (png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
                                                   &err, &_io_png_err_hdl,
                                                   NULL)))
-        return _io_png_read_cleanup(fp, NULL, NULL);
+        _IO_PNG_ABORT("libpng initialization error");
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
-        return _io_png_read_cleanup(fp, &png_ptr, NULL);
+        _IO_PNG_ABORT("libpng initialization error");
 
     /* if we get here, we had a problem reading from the file */
     if (setjmp(err.jmpbuf))
-        return _io_png_read_cleanup(fp, &png_ptr, NULL);
+        _IO_PNG_ABORT("libpng reading error");
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
@@ -285,7 +251,9 @@ static void *io_png_read_raw(const char *fname,
                     }
                 }
             }
-            (void) _io_png_read_cleanup(fp, &png_ptr, &info_ptr);
+            png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+            if (stdin != fp)
+                (void) fclose(fp);
             return (void *) data;
         }
         break;                  /* useless */
@@ -308,13 +276,14 @@ static void *io_png_read_raw(const char *fname,
                     }
                 }
             }
-            (void) _io_png_read_cleanup(fp, &png_ptr, &info_ptr);
+            png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+            if (stdin != fp)
+                (void) fclose(fp);
             return (void *) data;
         }
         break;                  /* useless */
     default:
-        /* must never happen, already tested */
-        return _io_png_read_cleanup(fp, &png_ptr, &info_ptr);
+        _IO_PNG_ABORT("bad parameter");
     }
 }
 
@@ -358,8 +327,7 @@ unsigned char *io_png_read_uchar_rgb(const char *fname, size_t * nxp,
                                             PNG_TRANSFORM_STRIP_ALPHA,
                                             IO_PNG_UCHAR);
     if (NULL == img)
-        /* error */
-        return NULL;
+        _IO_PNG_ABORT("bad parameters");
     if (3 == nc)
         /* already RGB */
         return img;
@@ -401,8 +369,7 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
                                             PNG_TRANSFORM_STRIP_ALPHA,
                                             IO_PNG_UCHAR);
     if (NULL == img)
-        /* error */
-        return NULL;
+        _IO_PNG_ABORT("bad parameters");
     if (1 == nc)
         /* already gray */
         return img;
@@ -489,8 +456,7 @@ float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
     img = (float *) io_png_read_raw(fname, nxp, nyp, &nc,
                                     PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_FLT);
     if (NULL == img)
-        /* error */
-        return NULL;
+        _IO_PNG_ABORT("bad parameters");
     if (3 == nc)
         /* already RGB */
         return img;
@@ -529,8 +495,7 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
     img = (float *) io_png_read_raw(fname, nxp, nyp, &nc,
                                     PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_FLT);
     if (NULL == img)
-        /* error */
-        return NULL;
+        _IO_PNG_ABORT("bad parameters");
     if (1 == nc)
         /* already gray */
         return img;
@@ -580,10 +545,10 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
  * @param fname PNG file name, "-" means stdout
  * @param png_data interlaced (RGBARGBARGBA...) byte image array
  * @param nx, ny, nc number of columns, lines and channels
- * @return 0 if everything OK, -1 if an error occured
+ * @return void, abort() on error
  */
-static int io_png_write_raw(const char *fname, const png_byte * png_data,
-                            size_t nx, size_t ny, size_t nc)
+static void io_png_write_raw(const char *fname, const png_byte * png_data,
+                             size_t nx, size_t ny, size_t nc)
 {
     png_structp png_ptr;
     png_infop info_ptr;
@@ -600,7 +565,7 @@ static int io_png_write_raw(const char *fname, const png_byte * png_data,
     if (0 == strcmp(fname, "-"))
         fp = stdout;
     else if (NULL == (fp = fopen(fname, "wb")))
-        return -1;
+        _IO_PNG_ABORT("failed to open file");
 
     /* allocate the row pointers */
     row_pointers = _IO_PNG_SAFE_MALLOC(ny, png_bytep);
@@ -612,13 +577,13 @@ static int io_png_write_raw(const char *fname, const png_byte * png_data,
     if (NULL == (png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                    &err, &_io_png_err_hdl,
                                                    NULL)))
-        return _io_png_write_cleanup(fp, row_pointers, NULL, NULL);
+        _IO_PNG_ABORT("libpng initialization error");
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
-        return _io_png_write_cleanup(fp, row_pointers, &png_ptr, NULL);
+        _IO_PNG_ABORT("libpng initialization error");
 
     /* if we get here, we had a problem writing to the file */
     if (0 != setjmp(err.jmpbuf))
-        return _io_png_write_cleanup(fp, row_pointers, &png_ptr, &info_ptr);
+        _IO_PNG_ABORT("libpng writing error");
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
@@ -639,7 +604,7 @@ static int io_png_write_raw(const char *fname, const png_byte * png_data,
         color_type = PNG_COLOR_TYPE_RGB_ALPHA;
         break;
     default:
-        return _io_png_write_cleanup(fp, row_pointers, &png_ptr, &info_ptr);
+        _IO_PNG_ABORT("bad parameters");
     }
     interlace = PNG_INTERLACE_ADAM7;
     compression = PNG_COMPRESSION_TYPE_BASE;
@@ -660,9 +625,12 @@ static int io_png_write_raw(const char *fname, const png_byte * png_data,
     png_write_end(png_ptr, info_ptr);
 
     /* clean up and free any memory allocated, close the file */
-    (void) _io_png_write_cleanup(fp, row_pointers, &png_ptr, &info_ptr);
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    free(row_pointers);
+    if (stdout != fp)
+        (void) fclose(fp);
 
-    return 0;
+    return;
 }
 
 /**
@@ -673,24 +641,23 @@ static int io_png_write_raw(const char *fname, const png_byte * png_data,
  * @param fname PNG file name
  * @param data deinterlaced array (RRRR..GGGG..BBBB..AAAA..) to write
  * @param nx, ny, nc number of columns, lines and channels of the image
- * @return 0 if everything OK, -1 if an error occured
+ * @return void, abort() on error
  *
  * @todo add type width checks
  */
-int io_png_write_uchar(const char *fname, const unsigned char *data,
-                       size_t nx, size_t ny, size_t nc)
+void io_png_write_uchar(const char *fname, const unsigned char *data,
+                        size_t nx, size_t ny, size_t nc)
 {
     const unsigned char *data_ptr;
     png_byte *png_data, *png_data_ptr;
     size_t size;
     size_t i, j, k;
-    int result;
 
     /* parameters check */
     if (0 >= nx || 0 >= ny || 0 >= nc)
-        return -1;
+        _IO_PNG_ABORT("bad parameters");
     if (NULL == fname || NULL == data)
-        return -1;
+        _IO_PNG_ABORT("bad parameters");
 
     /* allocate png_data */
     size = nx * ny * nc;
@@ -716,11 +683,10 @@ int io_png_write_uchar(const char *fname, const unsigned char *data,
         }
     }
 
-    result = io_png_write_raw(fname, png_data,
-                              (png_uint_32) nx, (png_uint_32) ny,
-                              (png_byte) nc);
+    io_png_write_raw(fname, png_data,
+                     (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc);
     free(png_data);
-    return result;
+    return;
 }
 
 /**
@@ -733,23 +699,22 @@ int io_png_write_uchar(const char *fname, const unsigned char *data,
  * @param fname PNG file name
  * @param data array to write
  * @param nx, ny, nc number of columns, lines and channels of the image
- * @return 0 if everything OK, -1 if an error occured
+ * @return void, abort() on error
  */
-int io_png_write_flt(const char *fname, const float *data,
-                     size_t nx, size_t ny, size_t nc)
+void io_png_write_flt(const char *fname, const float *data,
+                      size_t nx, size_t ny, size_t nc)
 {
     const float *data_ptr;
     png_byte *png_data, *png_data_ptr;
     size_t size;
     size_t i, j, k;
-    int result;
     float tmp;
 
     /* parameters check */
     if (0 >= nx || 0 >= ny || 0 >= nc)
-        return -1;
+        _IO_PNG_ABORT("bad parameters");
     if (NULL == fname || NULL == data)
-        return -1;
+        _IO_PNG_ABORT("bad parameters");
 
     /* allocate png_data */
     size = nx * ny * nc;
@@ -777,9 +742,8 @@ int io_png_write_flt(const char *fname, const float *data,
         }
     }
 
-    result = io_png_write_raw(fname, png_data,
-                              (png_uint_32) nx, (png_uint_32) ny,
-                              (png_byte) nc);
+    io_png_write_raw(fname, png_data,
+                     (png_uint_32) nx, (png_uint_32) ny, (png_byte) nc);
     free(png_data);
-    return result;
+    return;
 }

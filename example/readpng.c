@@ -43,12 +43,6 @@ int main(int argc, char **argv)
     /* read the image */
     img = io_png_read_flt(argv[1], &nx, &ny, &nc);
 
-    /* if img == NULL, there was an error while reading */
-    if (NULL == img) {
-        fprintf(stderr, "failed to read the image in.png\n");
-        abort();
-    }
-
     /* nx, ny and nc hold the image sizes */
     printf("image file: %s\n", argv[1]);
     printf("image size: %i x %i, %i channels\n",
@@ -99,10 +93,7 @@ int main(int argc, char **argv)
     }
 
     /* write the image */
-    if (0 != io_png_write_flt(argv[2], img, nx, ny, nc)) {
-        fprintf(stderr, "failed to write the image %s\n", argv[2]);
-        abort();
-    }
+    io_png_write_flt(argv[2], img, nx, ny, nc);
     free(img);
 
     /*
