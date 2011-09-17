@@ -14,15 +14,15 @@
 #include "io_png.h"
 
 /* constants used to select the read mode */
-#define F32      0
-#define F32_GRAY 1
-#define F32_RGB  2
-#define U8       3
-#define U8_GRAY  4
-#define U8_RGB   5
+#define FLT      0
+#define FLT_GRAY 1
+#define FLT_RGB  2
+#define UCHAR       3
+#define UCHAR_GRAY  4
+#define UCHAR_RGB   5
 
-static char mode_str[][9] = {
-    "f32", "f32_gray", "f32_rgb", "u8", "u8_gray", "u8_rgb"
+static char mode_str[][11] = {
+    "flt", "flt_gray", "flt_rgb", "uchar", "uchar_gray", "uchar_rgb"
 };
 
 /**
@@ -76,34 +76,34 @@ static float *io_png_read_mode(const char *fname,
                                int mode)
 {
     float *img;
-    unsigned char *img_u8;
+    unsigned char *img_uchar;
     size_t sz, i;
 
     printf(" mode:\t%s\n", mode_str[mode]);
 
     /* read the image file in one of the eight read modes */
     switch (mode) {
-    case F32:
-        img = io_png_read_f32(fname, nx, ny, nc);
+    case FLT:
+        img = io_png_read_flt(fname, nx, ny, nc);
         break;
-    case F32_GRAY:
+    case FLT_GRAY:
         *nc = 1;
-        img = io_png_read_f32_gray(fname, nx, ny);
+        img = io_png_read_flt_gray(fname, nx, ny);
         break;
-    case F32_RGB:
+    case FLT_RGB:
         *nc = 3;
-        img = io_png_read_f32_rgb(fname, nx, ny);
+        img = io_png_read_flt_rgb(fname, nx, ny);
         break;
-    case U8:
-        img_u8 = io_png_read_u8(fname, nx, ny, nc);
+    case UCHAR:
+        img_uchar = io_png_read_uchar(fname, nx, ny, nc);
         break;
-    case U8_GRAY:
+    case UCHAR_GRAY:
         *nc = 1;
-        img_u8 = io_png_read_u8_gray(fname, nx, ny);
+        img_uchar = io_png_read_uchar_gray(fname, nx, ny);
         break;
-    case U8_RGB:
+    case UCHAR_RGB:
         *nc = 3;
-        img_u8 = io_png_read_u8_rgb(fname, nx, ny);
+        img_uchar = io_png_read_uchar_rgb(fname, nx, ny);
         break;
     default:
         abort();
@@ -111,16 +111,16 @@ static float *io_png_read_mode(const char *fname,
 
     /* convert 8bit integer data to floats */
     switch (mode) {
-    case U8:
-    case U8_GRAY:
-    case U8_RGB:
+    case UCHAR:
+    case UCHAR_GRAY:
+    case UCHAR_RGB:
         sz = *nx * *ny * *nc;
-        if (NULL == img_u8)
+        if (NULL == img_uchar)
             abort();
         img = (float *) malloc(sz * sizeof(float));
         for (i = 0; i < sz; i++)
-            img[i] = (float) img_u8[i];
-        free(img_u8);
+            img[i] = (float) img_uchar[i];
+        free(img_uchar);
         break;
     }
 
@@ -131,7 +131,7 @@ static float *io_png_read_mode(const char *fname,
 }
 
 /**
- * print informations about an image file, read in u8/f32, gray/rgb mode
+ * print informations about an image file, read in uchar/flt, gray/rgb mode
  */
 static void mmms(const char *fname, int mode)
 {
@@ -159,12 +159,12 @@ int main(int argc, const char **argv)
     }
 
     printf("file:\t%s\n", argv[1]);
-    mmms(argv[1], F32);
-    mmms(argv[1], F32_GRAY);
-    mmms(argv[1], F32_RGB);
-    mmms(argv[1], U8);
-    mmms(argv[1], U8_GRAY);
-    mmms(argv[1], U8_RGB);
+    mmms(argv[1], FLT);
+    mmms(argv[1], FLT_GRAY);
+    mmms(argv[1], FLT_RGB);
+    mmms(argv[1], UCHAR);
+    mmms(argv[1], UCHAR_GRAY);
+    mmms(argv[1], UCHAR_RGB);
 
     return EXIT_SUCCESS;
 }

@@ -59,11 +59,11 @@ collected via pointer parameters.
 The two main front-end functions are, depending of the data type you want
 to use:
 
-* io_png_read_u8():
+* io_png_read_uchar():
   read a PNG image as an unsigned char array
   - 16bit images are converted to 8bit with precision loss
   - 1, 2 and 4bit images are converted to 8bit without precision loss
-* io_png_read_f32():
+* io_png_read_flt():
   read a PNG image as a float array
   - 16bit images are first converted to 8bit with precision loss
   - integer values are then converted to float
@@ -76,13 +76,13 @@ These functions have the same syntax:
 
 Four secondary read functions can be used to force a color model:
 
-* io_png_read_u8_rgb():
+* io_png_read_uchar_rgb():
   convert gray images to RGB and strip the alpha channel
-* io_png_read_u8_gray():
+* io_png_read_uchar_gray():
   convert RGB images to gray and strip the alpha channel
-* io_png_read_f32_rgb():
+* io_png_read_flt_rgb():
   convert gray images to RGB and strip the alpha channel
-* io_png_read_f32_gray():
+* io_png_read_flt_gray():
   convert RGB images to gray and strip the alpha channel
 
 These functions have the same syntax as the previous ones, except that
@@ -99,8 +99,8 @@ io_png_write_xxx(fname, data, nx, ny, nc):
     - data: image array
     - nx, ny, nc: image size
 
-* io_png_write_u8(): write a PNG image from an unsigned char array
-* io_png_write_f32(): write a PNG image from a float array
+* io_png_write_uchar(): write a PNG image from an unsigned char array
+* io_png_write_flt(): write a PNG image from a float array
   - the array values are first rounded,
   - then limited to [0..255], with values lower than 0 set to 0 and
     values higher than 255 set to 255

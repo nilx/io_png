@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     }
 
     /* read the image */
-    img = io_png_read_f32(argv[1], &nx, &ny, &nc);
+    img = io_png_read_flt(argv[1], &nx, &ny, &nc);
 
     /* if img == NULL, there was an error while reading */
     if (NULL == img) {
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     /*
      * from now on we suppose the image has RGB channels
      * this can be forced by using
-     * read_png_f32_rgb() instead of read_png_f32()
+     * read_png_flt_rgb() instead of read_png_flt()
      */
 
     if (3 <= nc) {
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
     }
 
     /* write the image */
-    if (0 != io_png_write_f32(argv[2], img, nx, ny, nc)) {
+    if (0 != io_png_write_flt(argv[2], img, nx, ny, nc)) {
         fprintf(stderr, "failed to write the image %s\n", argv[2]);
         abort();
     }
@@ -110,12 +110,12 @@ int main(int argc, char **argv)
      * to handle colorspace conversion
      */
     /* read as RGB, and save */
-    img = io_png_read_f32_rgb(argv[1], &nx, &ny);
-    io_png_write_f32(argv[2], img, nx, ny, 3);
+    img = io_png_read_flt_rgb(argv[1], &nx, &ny);
+    io_png_write_flt(argv[2], img, nx, ny, 3);
     free(img);
     /* read as gray, and save */
-    img = io_png_read_f32_gray(argv[1], &nx, &ny);
-    io_png_write_f32(argv[2], img, nx, ny, 1);
+    img = io_png_read_flt_gray(argv[1], &nx, &ny);
+    io_png_write_flt(argv[2], img, nx, ny, 1);
     free(img);
 
     return EXIT_SUCCESS;

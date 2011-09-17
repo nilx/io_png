@@ -78,13 +78,13 @@ int main(int argc, char *const *argv)
     b = atof(argv[3]);
 
     /* read the PNG input image */
-    img = io_png_read_f32(argv[2], &nx, &ny, &nc);
+    img = io_png_read_flt(argv[2], &nx, &ny, &nc);
 
     /* transform the data */
     axpb(img, nx * ny * nc, a, b);
 
     /* write the PNG output image */
-    io_png_write_f32(argv[4], img, nx, ny, nc);
+    io_png_write_flt(argv[4], img, nx, ny, nc);
 
     /* free the memory */
     free(img);

@@ -5,14 +5,12 @@
 # the copyright notice and this notice are preserved.  This file is
 # offered as-is, without any warranty.
 
-# source code, C language
-CSRC	= io_png.c example/readpng.c example/mmms.c example/axpb.c 
-# source code, all languages (only C here)
-SRC	= $(CSRC)
+# source code
+SRC	= io_png.c example/readpng.c example/mmms.c example/axpb.c
 # object files (partial compilation)
-OBJ	= $(CSRC:.c=.o)
+OBJ	= $(SRC:.c=.o)
 # binary executable programs
-BIN	= $(filter example/%, $(CSRC:.c=))
+BIN	= $(filter example/%, $(SRC:.c=))
 
 # standard C compiler optimization options
 COPT	= -O2 -funroll-loops -fomit-frame-pointer
@@ -77,7 +75,7 @@ RELEASE_TAG   = 0.$(DATE)
 srcdoc	: $(SRC)
 	doxygen doc/doxygen.conf
 # code cleanup
-beautify	: $(CSRC)
+beautify	: $(SRC)
 	for FILE in $^; do \
 		expand $$FILE | sed 's/[ \t]*$$//' > $$FILE.$$$$ \
 		&& indent -kr -i4 -l78 -nut -nce -sob -sc \
@@ -85,14 +83,14 @@ beautify	: $(CSRC)
 		&& rm $$FILE.$$$$; \
 	done
 # static code analysis
-lint	: $(CSRC)
+lint	: $(SRC)
 	for FILE in $^; do \
 		clang --analyze -ansi -I. $$FILE || exit 1; done;
 	for FILE in $^; do \
 		splint -ansi-lib -weak -I. $$FILE || exit 1; done;
 	$(RM) *.plist
 # code tests
-test	: $(CSRC)
+test	: $(SRC)
 	sh -e test/run.sh && echo SUCCESS || ( echo ERROR; return 1)
 # release tarball
 release	: beautify lint test distclean
