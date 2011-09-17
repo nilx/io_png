@@ -75,8 +75,12 @@ char *io_png_info(void)
     return _io_png_tag;
 }
 
+/*
+ * UTILS
+ */
+
 /**
- * local error structure
+ * @brief local error structure
  * see http://www.libpng.org/pub/png/book/chapter14.htmlpointer
  */
 typedef struct _io_png_err_s {
@@ -84,7 +88,7 @@ typedef struct _io_png_err_s {
 } _io_png_err_t;
 
 /**
- * local error handler
+ * @brief local error handler
  * see http://www.libpng.org/pub/png/book/chapter14.htmlpointer
  */
 static void _io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
@@ -103,28 +107,70 @@ static void _io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
     longjmp(err_ptr->jmpbuf, 1);
 }
 
-/*
- * READ
+/**
+ * @brief safe malloc wrapper
+ * @todo verbose error message
  */
+static void *_io_png_safe_malloc(size_t size)
+{
+    void *memptr;
+
+    if (NULL == (memptr = malloc(size))) {
+        fprintf(stderr, "not enough memory\n");
+        abort();
+    }
+    return memptr;
+}
 
 /**
- * @brief internal function used to cleanup the memory when
- * png_read_raw() fails
+ * @brief safe malloc wrapper macro with safe casting
+ */
+#define _IO_PNG_SAFE_MALLOC(NB, TYPE) \
+    ((TYPE *) _io_png_safe_malloc((size_t) (NB) * sizeof(TYPE)))
+
+/**
+ * @brief cleanup the memory when a read operation fails
  *
  * @param fp file pointer to close, ignored if NULL
  * @param png_ptr_p, info_ptr_p, pointers to PNG structure pointers,
  *        ignored if NULL
  * @return NULL
  */
-static void *_io_png_read_abort(FILE * fp,
-                                png_structp * png_ptr_p,
-                                png_infop * info_ptr_p)
+static void *_io_png_read_cleanup(FILE * fp,
+                                  png_structp * png_ptr_p,
+                                  png_infop * info_ptr_p)
 {
     png_destroy_read_struct(png_ptr_p, info_ptr_p, NULL);
     if (NULL != fp && stdin != fp)
         (void) fclose(fp);
     return NULL;
 }
+
+/**
+ * @brief cleanup the memory when a write operation fails
+ *
+ * @param fp file pointer to close, ignored if NULL
+ * @param row_pointers array to free, ignored if NULL
+ * @param png_ptr_p, info_ptr_p, pointers to PNG structure pointers,
+ *        ignored if NULL
+ * @return -1
+ */
+static int _io_png_write_cleanup(FILE * fp,
+                                 png_bytep * row_pointers,
+                                 png_structp * png_ptr_p,
+                                 png_infop * info_ptr_p)
+{
+    png_destroy_write_struct(png_ptr_p, info_ptr_p);
+    if (NULL != row_pointers)
+        free(row_pointers);
+    if (NULL != fp && stdout != fp)
+        (void) fclose(fp);
+    return -1;
+}
+
+/*
+ * READ
+ */
 
 /**
  * @brief internal function used to read a PNG file into an array
@@ -169,7 +215,7 @@ static void *io_png_read_raw(const char *fname,
     /* read in some of the signature bytes and check this signature */
     if ((PNG_SIG_LEN != fread(png_sig, 1, PNG_SIG_LEN, fp))
         || 0 != png_sig_cmp(png_sig, (png_size_t) 0, PNG_SIG_LEN))
-        return _io_png_read_abort(fp, NULL, NULL);
+        return _io_png_read_cleanup(fp, NULL, NULL);
 
     /*
      * create and initialize the png_struct and png_info structures
@@ -178,13 +224,13 @@ static void *io_png_read_raw(const char *fname,
     if (NULL == (png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
                                                   &err, &_io_png_err_hdl,
                                                   NULL)))
-        return _io_png_read_abort(fp, NULL, NULL);
+        return _io_png_read_cleanup(fp, NULL, NULL);
     if (NULL == (info_ptr = png_create_info_struct(png_ptr)))
-        return _io_png_read_abort(fp, &png_ptr, NULL);
+        return _io_png_read_cleanup(fp, &png_ptr, NULL);
 
     /* if we get here, we had a problem reading from the file */
     if (setjmp(err.jmpbuf))
-        return _io_png_read_abort(fp, &png_ptr, NULL);
+        return _io_png_read_cleanup(fp, &png_ptr, NULL);
 
     /* set up the input control using standard C streams */
     png_init_io(png_ptr, fp);
@@ -225,10 +271,7 @@ static void *io_png_read_raw(const char *fname,
             unsigned char *data = NULL, *data_ptr = NULL;
             png_bytep row_ptr;
             size_t i, j, k;
-            if (NULL == (data =
-                         (unsigned char *) malloc(size *
-                                                  sizeof(unsigned char))))
-                return _io_png_read_abort(fp, &png_ptr, &info_ptr);
+            data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
             for (k = 0; k < *ncp; k++) {
                 /* channel loop */
                 data_ptr = data + (size_t) (*nxp * *nyp * k);
@@ -242,7 +285,7 @@ static void *io_png_read_raw(const char *fname,
                     }
                 }
             }
-            (void) _io_png_read_abort(fp, &png_ptr, &info_ptr);
+            (void) _io_png_read_cleanup(fp, &png_ptr, &info_ptr);
             return (void *) data;
         }
         break;                  /* useless */
@@ -251,8 +294,7 @@ static void *io_png_read_raw(const char *fname,
             float *data = NULL, *data_ptr = NULL;
             png_bytep row_ptr;
             size_t i, j, k;
-            if (NULL == (data = (float *) malloc(size * sizeof(float))))
-                return _io_png_read_abort(fp, &png_ptr, &info_ptr);
+            data = _IO_PNG_SAFE_MALLOC(size, float);
             for (k = 0; k < *ncp; k++) {
                 /* channel loop */
                 data_ptr = data + (size_t) (*nxp * *nyp * k);
@@ -266,13 +308,13 @@ static void *io_png_read_raw(const char *fname,
                     }
                 }
             }
-            (void) _io_png_read_abort(fp, &png_ptr, &info_ptr);
+            (void) _io_png_read_cleanup(fp, &png_ptr, &info_ptr);
             return (void *) data;
         }
         break;                  /* useless */
     default:
         /* must never happen, already tested */
-        return _io_png_read_abort(fp, &png_ptr, &info_ptr);
+        return _io_png_read_cleanup(fp, &png_ptr, &info_ptr);
     }
 }
 
@@ -526,29 +568,6 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
  */
 
 /**
- * @brief internal function used to cleanup the memory when
- * png_write_raw() fails
- *
- * @param fp file pointer to close, ignored if NULL
- * @param row_pointers array to free, ignored if NULL
- * @param png_ptr_p, info_ptr_p, pointers to PNG structure pointers,
- *        ignored if NULL
- * @return -1
- */
-static int _io_png_write_cleanup(FILE * fp,
-                                 png_bytep * row_pointers,
-                                 png_structp * png_ptr_p,
-                                 png_infop * info_ptr_p)
-{
-    png_destroy_write_struct(png_ptr_p, info_ptr_p);
-    if (NULL != row_pointers)
-        free(row_pointers);
-    if (NULL != fp && stdout != fp)
-        (void) fclose(fp);
-    return -1;
-}
-
-/**
  * @brief internal function used to write a byte array as a PNG file
  *
  * The PNG file is written as a 8bit image file, interlaced,
@@ -584,8 +603,7 @@ static int io_png_write_raw(const char *fname, const png_byte * png_data,
         return -1;
 
     /* allocate the row pointers */
-    if (NULL == (row_pointers = (png_bytep *) malloc(ny * sizeof(png_bytep))))
-        return _io_png_write_cleanup(fp, NULL, NULL, NULL);
+    row_pointers = _IO_PNG_SAFE_MALLOC(ny, png_bytep);
 
     /*
      * create and initialize the png_struct and png_info structures
@@ -674,10 +692,9 @@ int io_png_write_uchar(const char *fname, const unsigned char *data,
     if (NULL == fname || NULL == data)
         return -1;
 
-    size = nx * ny * nc;
     /* allocate png_data */
-    if (NULL == (png_data = (png_byte *) malloc(size * sizeof(png_byte))))
-        return -1;
+    size = nx * ny * nc;
+    png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
 
     /*
      * interlace RRR GGG BBB AAA to RGBA RGBA RGBA
@@ -734,10 +751,9 @@ int io_png_write_flt(const char *fname, const float *data,
     if (NULL == fname || NULL == data)
         return -1;
 
-    size = nx * ny * nc;
     /* allocate png_data */
-    if (NULL == (png_data = (png_byte *) malloc(size * sizeof(png_byte))))
-        return -1;
+    size = nx * ny * nc;
+    png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
 
     /*
      * interlace RRR GGG BBB AAA to RGBA RGBA RGBA
