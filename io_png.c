@@ -52,10 +52,6 @@
 
 #define PNG_SIG_LEN 4
 
-/* internal only data type identifiers */
-#define IO_PNG_UCHAR  0x0001    /* unsigned char */
-#define IO_PNG_FLT 0x0002       /* float */
-
 /*
  * INFO
  */
@@ -234,12 +230,11 @@ static void _io_png_deinterlace(png_byte * data, size_t csize, size_t nc)
  *        with the number of columns, lines and channels of the image
  * @param png_transform a PNG_TRANSFORM flag to be added to the
  *        default libpng read transforms
- * @param dtype identifier for the data type to be used for output
  * @return pointer to an allocated array of pixels, abort() on error
  */
-static void *io_png_read_raw(const char *fname,
-                             size_t * nxp, size_t * nyp, size_t * ncp,
-                             int png_transform, int dtype)
+static png_byte *io_png_read_raw(const char *fname,
+                                 size_t * nxp, size_t * nyp, size_t * ncp,
+                                 int png_transform)
 {
     png_byte png_sig[PNG_SIG_LEN];
     png_structp png_ptr;
@@ -255,8 +250,6 @@ static void *io_png_read_raw(const char *fname,
 
     /* parameters check */
     if (NULL == fname || NULL == nxp || NULL == nyp || NULL == ncp)
-        _IO_PNG_ABORT("bad parameters");
-    if (IO_PNG_UCHAR != dtype && IO_PNG_FLT != dtype)
         _IO_PNG_ABORT("bad parameters");
 
     /* open the PNG input file */
@@ -326,41 +319,7 @@ static void *io_png_read_raw(const char *fname,
     if (stdin != fp)
         (void) fclose(fp);
 
-    /*
-     * allocate the output data RGB array
-     * de-interlace and convert png RGB RGB RGB 8bit to RRR GGG BBB
-     * the image is de-interlaced layer after layer
-     * this loop order is not the fastest but it is generic and also
-     * works for one single channel
-     */
-    switch (dtype) {
-    case IO_PNG_UCHAR:
-        {
-            unsigned char *data;
-
-            data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
-            for (i = 0; i < size; i++)
-                data[i] = (unsigned char) png_data[i];
-
-            free(png_data);
-            return (void *) data;
-        }
-        break;                  /* useless */
-    case IO_PNG_FLT:
-        {
-            float *data;
-
-            data = _IO_PNG_SAFE_MALLOC(size, float);
-            for (i = 0; i < size; i++)
-                data[i] = (float) png_data[i];
-
-            free(png_data);
-            return (void *) data;
-        }
-        break;                  /* useless */
-    default:
-        _IO_PNG_ABORT("bad parameter");
-    }
+    return png_data;
 }
 
 /**
@@ -381,10 +340,21 @@ static void *io_png_read_raw(const char *fname,
 unsigned char *io_png_read_uchar(const char *fname,
                                  size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    /* read the image as unsigned char */
-    return (unsigned char *) io_png_read_raw(fname, nxp, nyp, ncp,
-                                             PNG_TRANSFORM_IDENTITY,
-                                             IO_PNG_UCHAR);
+    png_byte *png_data;
+    unsigned char *data;
+    size_t i, size;
+
+    /* read the raw image */
+    png_data = io_png_read_raw(fname, nxp, nyp, ncp, PNG_TRANSFORM_IDENTITY);
+
+    size = *nxp * *nyp * *ncp;
+    data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
+
+    for (i = 0; i < size; i++)
+        data[i] = (unsigned char) png_data[i];
+
+    free(png_data);
+    return data;
 }
 
 /**
@@ -396,36 +366,37 @@ unsigned char *io_png_read_uchar_rgb(const char *fname, size_t * nxp,
                                      size_t * nyp)
 {
     size_t nc;
-    unsigned char *img;
+    unsigned char *data;
 
     /* read the image */
-    img = (unsigned char *) io_png_read_raw(fname, nxp, nyp, &nc,
-                                            PNG_TRANSFORM_STRIP_ALPHA,
-                                            IO_PNG_UCHAR);
-    if (NULL == img)
-        _IO_PNG_ABORT("bad parameters");
-    if (3 == nc)
-        /* already RGB */
-        return img;
-    else {
+    data = io_png_read_uchar(fname, nxp, nyp, &nc);
+
+    if (4 == nc || 2 == nc) {
+        /* strip alpha channel ... */
+        nc -= 1;
+        data = _IO_PNG_SAFE_REALLOC(data, nc * *nxp * *nyp, unsigned char);
+    }
+
+    if (1 == nc) {
         /* convert to RGB */
         size_t i, size;
-        unsigned char *img_r, *img_g, *img_b;
+        unsigned char *data_r, *data_g, *data_b;
 
         /* resize the image */
         size = *nxp * *nyp;
-        img = _IO_PNG_SAFE_REALLOC(img, 3 * size, unsigned char);
-        img_r = img;
-        img_g = img + size;
-        img_b = img + 2 * size;
+        data = _IO_PNG_SAFE_REALLOC(data, 3 * size, unsigned char);
+        data_r = data;
+        data_g = data + size;
+        data_b = data + 2 * size;
 
         /* gray->RGB conversion */
         for (i = 0; i < size; i++) {
-            img_g[i] = img_r[i];
-            img_b[i] = img_r[i];
+            data_g[i] = data_r[i];
+            data_b[i] = data_r[i];
         }
-        return img;
     }
+
+    return data;
 }
 
 /**
@@ -437,21 +408,21 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
                                       size_t * nxp, size_t * nyp)
 {
     size_t nc;
-    unsigned char *img;
+    unsigned char *data;
 
     /* read the image */
-    img = (unsigned char *) io_png_read_raw(fname, nxp, nyp, &nc,
-                                            PNG_TRANSFORM_STRIP_ALPHA,
-                                            IO_PNG_UCHAR);
-    if (NULL == img)
-        _IO_PNG_ABORT("bad parameters");
-    if (1 == nc)
-        /* already gray */
-        return img;
-    else {
+    data = io_png_read_uchar(fname, nxp, nyp, &nc);
+
+    if (4 == nc || 2 == nc) {
+        /* strip alpha channel ... */
+        nc -= 1;
+        data = _IO_PNG_SAFE_REALLOC(data, nc * *nxp * *nyp, unsigned char);
+    }
+
+    if (3 == nc) {
         /* convert to gray */
         size_t i, size;
-        unsigned char *img_r, *img_g, *img_b;
+        unsigned char *data_r, *data_g, *data_b;
 
         /*
          * RGB->gray conversion
@@ -466,14 +437,13 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
          * http://www.itu.int/rec/R-REC-BT.709/en
          */
         size = *nxp * *nyp;
-        img_r = img;
-        img_g = img + size;
-        img_b = img + 2 * size;
-        for (i = 0; i < size; i++)
-            /*
-             * if int type is less than 24 bits, we use long ints,
-             * guaranteed to be >=32 bit
-             */
+        data_r = data;
+        data_g = data + size;
+        data_b = data + 2 * size;
+        /*
+         * if int type is less than 24 bits, we use long ints,
+         * guaranteed to be >=32 bit
+         */
 #if (UINT_MAX>>24 == 0)
 #define CR 6968ul
 #define CG 23434ul
@@ -483,16 +453,19 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
 #define CG 23434u
 #define CB 2366u
 #endif
+        for (i = 0; i < size; i++)
             /* (1 << 14) is added for rounding instead of truncation */
-            img[i] = (unsigned char) ((CR * img_r[i] + CG * img_g[i]
-                                       + CB * img_b[i] + (1 << 14)) >> 15);
+            data[i] = (unsigned char) ((CR * data_r[i] + CG * data_g[i]
+                                        + CB * data_b[i] + (1 << 14)) >> 15);
 #undef CR
 #undef CG
 #undef CB
-        /* resize and return the image */
-        img = _IO_PNG_SAFE_REALLOC(img, size, unsigned char);
-        return img;
+
+        /* resize */
+        data = _IO_PNG_SAFE_REALLOC(data, size, unsigned char);
     }
+
+    return data;
 }
 
 /**
@@ -512,9 +485,21 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
 float *io_png_read_flt(const char *fname,
                        size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    /* read the image as float */
-    return (float *) io_png_read_raw(fname, nxp, nyp, ncp,
-                                     PNG_TRANSFORM_IDENTITY, IO_PNG_FLT);
+    png_byte *png_data;
+    float *data;
+    size_t i, size;
+
+    /* read the raw image */
+    png_data = io_png_read_raw(fname, nxp, nyp, ncp, PNG_TRANSFORM_IDENTITY);
+
+    size = *nxp * *nyp * *ncp;
+    data = _IO_PNG_SAFE_MALLOC(size, float);
+
+    for (i = 0; i < size; i++)
+        data[i] = (float) png_data[i];
+
+    free(png_data);
+    return data;
 }
 
 /**
@@ -525,35 +510,37 @@ float *io_png_read_flt(const char *fname,
 float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
 {
     size_t nc;
-    float *img;
+    float *data;
 
     /* read the image */
-    img = (float *) io_png_read_raw(fname, nxp, nyp, &nc,
-                                    PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_FLT);
-    if (NULL == img)
-        _IO_PNG_ABORT("bad parameters");
-    if (3 == nc)
-        /* already RGB */
-        return img;
-    else {
+    data = (float *) io_png_read_flt(fname, nxp, nyp, &nc);
+
+    if (4 == nc || 2 == nc) {
+        /* strip alpha channel ... */
+        nc -= 1;
+        data = _IO_PNG_SAFE_REALLOC(data, nc * *nxp * *nyp, float);
+    }
+
+    if (1 == nc) {
         /* convert to RGB */
         size_t i, size;
-        float *img_r, *img_g, *img_b;
+        float *data_r, *data_g, *data_b;
 
         /* resize the image */
         size = *nxp * *nyp;
-        img = _IO_PNG_SAFE_REALLOC(img, 3 * size, float);
-        img_r = img;
-        img_g = img + size;
-        img_b = img + 2 * size;
+        data = _IO_PNG_SAFE_REALLOC(data, 3 * size, float);
+        data_r = data;
+        data_g = data + size;
+        data_b = data + 2 * size;
 
         /* gray->RGB conversion */
         for (i = 0; i < size; i++) {
-            img_g[i] = img_r[i];
-            img_b[i] = img_r[i];
+            data_g[i] = data_r[i];
+            data_b[i] = data_r[i];
         }
-        return img;
     }
+
+    return data;
 }
 
 /**
@@ -564,20 +551,21 @@ float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
 float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
 {
     size_t nc;
-    float *img;
+    float *data;
 
     /* read the image */
-    img = (float *) io_png_read_raw(fname, nxp, nyp, &nc,
-                                    PNG_TRANSFORM_STRIP_ALPHA, IO_PNG_FLT);
-    if (NULL == img)
-        _IO_PNG_ABORT("bad parameters");
-    if (1 == nc)
-        /* already gray */
-        return img;
-    else {
+    data = io_png_read_flt(fname, nxp, nyp, &nc);
+
+    if (4 == nc || 2 == nc) {
+        /* strip alpha channel ... */
+        nc -= 1;
+        data = _IO_PNG_SAFE_REALLOC(data, nc * *nxp * *nyp, float);
+    }
+
+    if (3 == nc) {
         /* convert to gray */
         size_t i, size;
-        float *img_r, *img_g, *img_b;
+        float *data_r, *data_g, *data_b;
 
         /*
          * RGB->gray conversion
@@ -590,17 +578,18 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
          * http://www.itu.int/rec/R-REC-BT.709/en
          */
         size = *nxp * *nyp;
-        img_r = img;
-        img_g = img + size;
-        img_b = img + 2 * size;
+        data_r = data;
+        data_g = data + size;
+        data_b = data + 2 * size;
         for (i = 0; i < size; i++)
-            img[i] = (float) (0.212639005871510 * img_r[i]
-                              + 0.715168678767756 * img_g[i]
-                              + 0.072192315360734 * img_b[i]);
-        /* resize and return the image */
-        img = _IO_PNG_SAFE_REALLOC(img, size, float);
-        return img;
+            data[i] = (float) (0.212639005871510 * data_r[i]
+                               + 0.715168678767756 * data_g[i]
+                               + 0.072192315360734 * data_b[i]);
+        /* resize */
+        data = _IO_PNG_SAFE_REALLOC(data, size, float);
     }
+
+    return data;
 }
 
 /*
