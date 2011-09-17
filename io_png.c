@@ -293,6 +293,64 @@ static png_byte *_io_png_gray_to_rgb(png_byte * png_data, size_t size)
     return png_data;
 }
 
+/**
+ * @brief convert raw png rgb to gray
+ *
+ * Y = (6968 * R + 23434 * G + 2366 * B) / 32768
+ * integer approximation of
+ * Y = Cr* R + Cg * G + Cb * B
+ * with
+ * Cr = 0.212639005871510
+ * Cg = 0.715168678767756
+ * Cb = 0.072192315360734
+ * derived from ITU BT.709-5 (Rec 709) sRGB and D65 definitions
+ * http://www.itu.int/rec/R-REC-BT.709/en
+ *
+ * @param png_data array to convert
+ * @param size array size
+ * @return converted array (via realloc())
+ *
+ * @todo restrict keyword
+ */
+static png_byte *_io_png_rgb_to_gray(png_byte * png_data, size_t size)
+{
+    size_t i;
+    png_byte *r, *g, *b;
+
+    if (NULL == png_data || 0 == size || 0 != (size % 3))
+        _IO_PNG_ABORT("bad parameters");
+
+    size /= 3;
+    r = png_data;
+    g = png_data + size;
+    b = png_data + 2 * size;
+
+    /*
+     * if int type is less than 24 bits, we use long ints,
+     * guaranteed to be >= 32 bit
+     */
+#if (UINT_MAX >> 24 == 0)
+#define CR 6968UL
+#define CG 23434UL
+#define CB 2366UL
+#else
+#define CR 6968U
+#define CG 23434U
+#define CB 2366U
+#endif
+    for (i = 0; i < size; i++)
+        /* (1 << 14) is added for rounding instead of truncation */
+        png_data[i] = (unsigned char) ((CR * r[i] + CG * g[i]
+                                        + CB * b[i] + (1 << 14)) >> 15);
+#undef CR
+#undef CG
+#undef CB
+
+    png_data = _IO_PNG_SAFE_REALLOC(png_data, size, png_byte);
+
+    return png_data;
+}
+
 /*
  * READ
  */
@@ -480,55 +538,14 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
         nc -= 1;
         png_data = _IO_PNG_SAFE_REALLOC(png_data, nc * *nxp * *nyp, png_byte);
     }
+    /* rgb->gray */
+    if (3 == nc) {
+        png_data = _io_png_rgb_to_gray(png_data, *nxp * *nyp * nc);
+        nc = 1;
+    }
     /* convert to uchar */
     data = _io_png_to_uchar(png_data, *nxp * *nyp * nc);
     free(png_data);
-
-    if (3 == nc) {
-        /* convert to gray */
-        size_t i, size;
-        unsigned char *data_r, *data_g, *data_b;
-
-        /*
-         * RGB->gray conversion
-         * Y = (6968 * R + 23434 * G + 2366 * B) / 32768
-         * integer approximation of
-         * Y = Cr* R + Cg * G + Cb * B
-         * with
-         * Cr = 0.212639005871510
-         * Cg = 0.715168678767756
-         * Cb = 0.072192315360734
-         * derived from ITU BT.709-5 (Rec 709) sRGB and D65 definitions
-         * http://www.itu.int/rec/R-REC-BT.709/en
-         */
-        size = *nxp * *nyp;
-        data_r = data;
-        data_g = data + size;
-        data_b = data + 2 * size;
-        /*
-         * if int type is less than 24 bits, we use long ints,
-         * guaranteed to be >=32 bit
-         */
-#if (UINT_MAX>>24 == 0)
-#define CR 6968ul
-#define CG 23434ul
-#define CB 2366ul
-#else
-#define CR 6968u
-#define CG 23434u
-#define CB 2366u
-#endif
-        for (i = 0; i < size; i++)
-            /* (1 << 14) is added for rounding instead of truncation */
-            data[i] = (unsigned char) ((CR * data_r[i] + CG * data_g[i]
-                                        + CB * data_b[i] + (1 << 14)) >> 15);
-#undef CR
-#undef CG
-#undef CB
-
-        /* resize */
-        data = _IO_PNG_SAFE_REALLOC(data, size, unsigned char);
-    }
 
     return data;
 }
