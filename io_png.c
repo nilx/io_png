@@ -92,7 +92,6 @@ char *io_png_info(void)
 
 /**
  * @brief safe malloc wrapper
- * @todo verbose error message
  */
 static void *_io_png_safe_malloc(size_t size)
 {
@@ -106,8 +105,26 @@ static void *_io_png_safe_malloc(size_t size)
 /**
  * @brief safe malloc wrapper macro with safe casting
  */
-#define _IO_PNG_SAFE_MALLOC(NB, TYPE) \
+#define _IO_PNG_SAFE_MALLOC(NB, TYPE)                                   \
     ((TYPE *) _io_png_safe_malloc((size_t) (NB) * sizeof(TYPE)))
+
+/**
+ * @brief safe realloc wrapper
+ */
+static void *_io_png_safe_realloc(void *memptr, size_t size)
+{
+    void *newptr;
+
+    if (NULL == (newptr = realloc(memptr, size)))
+        _IO_PNG_ABORT("not enough memory");
+    return newptr;
+}
+
+/**
+ * @brief safe realloc wrapper macro with safe casting
+ */
+#define _IO_PNG_SAFE_REALLOC(PTR, NB, TYPE)                             \
+    ((TYPE *) _io_png_safe_realloc((void *) (PTR), (size_t) (NB) * sizeof(TYPE)))
 
 /**
  * @brief local error structure
@@ -338,8 +355,7 @@ unsigned char *io_png_read_uchar_rgb(const char *fname, size_t * nxp,
 
         /* resize the image */
         size = *nxp * *nyp;
-        img = (unsigned char *)
-            realloc(img, 3 * size * sizeof(unsigned char));
+        img = _IO_PNG_SAFE_REALLOC(img, 3 * size, unsigned char);
         img_r = img;
         img_g = img + size;
         img_b = img + 2 * size;
@@ -415,7 +431,7 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
 #undef CG
 #undef CB
         /* resize and return the image */
-        img = (unsigned char *) realloc(img, size * sizeof(unsigned char));
+        img = _IO_PNG_SAFE_REALLOC(img, size, unsigned char);
         return img;
     }
 }
@@ -467,7 +483,7 @@ float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
 
         /* resize the image */
         size = *nxp * *nyp;
-        img = (float *) realloc(img, 3 * size * sizeof(float));
+        img = _IO_PNG_SAFE_REALLOC(img, 3 * size, float);
         img_r = img;
         img_g = img + size;
         img_b = img + 2 * size;
@@ -523,7 +539,7 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
                               + 0.715168678767756 * img_g[i]
                               + 0.072192315360734 * img_b[i]);
         /* resize and return the image */
-        img = (float *) realloc(img, size * sizeof(float));
+        img = _IO_PNG_SAFE_REALLOC(img, size, float);
         return img;
     }
 }
