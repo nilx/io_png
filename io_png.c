@@ -29,8 +29,7 @@
  * @todo replace rgb/gray with sRGB / Y references
  * @todo implement sRGB gamma and better RGBY conversion
  * @todo process the data as float before quantization
- * @todo no more pointer loops
- * @todo npre/post-processing timing
+ * @todo pre/post-processing timing
  *
  * @author Nicolas Limare <nicolas.limare@cmla.ens-cachan.fr>
  */
@@ -49,8 +48,6 @@
 
 /* ensure consistency */
 #include "io_png.h"
-
-#define PNG_SIG_LEN 4
 
 /*
  * INFO
@@ -220,6 +217,8 @@ static void _io_png_deinterlace(png_byte * data, size_t csize, size_t nc)
  * READ
  */
 
+#define PNG_SIG_LEN 4
+
 /**
  * @brief internal function used to read a PNG file into an array
  *
@@ -228,19 +227,17 @@ static void _io_png_deinterlace(png_byte * data, size_t csize, size_t nc)
  * @param fname PNG file name, "-" means stdin
  * @param nxp, nyp, ncp pointers to variables to be filled
  *        with the number of columns, lines and channels of the image
- * @param png_transform a PNG_TRANSFORM flag to be added to the
- *        default libpng read transforms
  * @return pointer to an allocated array of pixels, abort() on error
  */
 static png_byte *io_png_read_raw(const char *fname,
-                                 size_t * nxp, size_t * nyp, size_t * ncp,
-                                 int png_transform)
+                                 size_t * nxp, size_t * nyp, size_t * ncp)
 {
     png_byte png_sig[PNG_SIG_LEN];
     png_structp png_ptr;
     png_infop info_ptr;
     png_bytepp row_pointers;
     png_byte *png_data;
+    int png_transform;
     /* volatile: because of setjmp/longjmp */
     FILE *volatile fp = NULL;
     size_t size;
@@ -291,7 +288,8 @@ static png_byte *io_png_read_raw(const char *fname,
      * PNG_TRANSFORM_PACKING       expand 1, 2 and 4-bit
      *                             samples to bytes
      */
-    png_transform |= (PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING);
+    png_transform = (PNG_TRANSFORM_IDENTITY
+                     | PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING);
 
     /*
      * read in the entire image at once
@@ -345,7 +343,7 @@ unsigned char *io_png_read_uchar(const char *fname,
     size_t i, size;
 
     /* read the raw image */
-    png_data = io_png_read_raw(fname, nxp, nyp, ncp, PNG_TRANSFORM_IDENTITY);
+    png_data = io_png_read_raw(fname, nxp, nyp, ncp);
 
     size = *nxp * *nyp * *ncp;
     data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
@@ -490,7 +488,7 @@ float *io_png_read_flt(const char *fname,
     size_t i, size;
 
     /* read the raw image */
-    png_data = io_png_read_raw(fname, nxp, nyp, ncp, PNG_TRANSFORM_IDENTITY);
+    png_data = io_png_read_raw(fname, nxp, nyp, ncp);
 
     size = *nxp * *nyp * *ncp;
     data = _IO_PNG_SAFE_MALLOC(size, float);
