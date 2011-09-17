@@ -646,36 +646,14 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
             _IO_PNG_SAFE_REALLOC(png_data, nx * ny * (nc - 1), png_byte);
         nc = nc - 1;
     }
+    /* rgb->gray */
+    if (3 == nc) {
+        png_data = _io_png_rgb_to_gray(png_data, nx * ny * nc);
+        nc = 1;
+    }
     /* convert to flt */
     data = _io_png_to_flt(png_data, nx * ny * nc);
     free(png_data);
-
-    if (3 == nc) {
-        /* convert to gray */
-        size_t i, size;
-        float *data_r, *data_g, *data_b;
-
-        /*
-         * RGB->gray conversion
-         * Y = Cr* R + Cg * G + Cb * B
-         * with
-         * Cr = 0.212639005871510
-         * Cg = 0.715168678767756
-         * Cb = 0.072192315360734
-         * derived from ITU BT.709-5 (Rec 709) sRGB and D65 definitions
-         * http://www.itu.int/rec/R-REC-BT.709/en
-         */
-        size = nx * ny;
-        data_r = data;
-        data_g = data + size;
-        data_b = data + 2 * size;
-        for (i = 0; i < size; i++)
-            data[i] = (float) (0.212639005871510 * data_r[i]
-                               + 0.715168678767756 * data_g[i]
-                               + 0.072192315360734 * data_b[i]);
-        /* resize */
-        data = _IO_PNG_SAFE_REALLOC(data, size, float);
-    }
 
     *nxp = nx;
     *nyp = ny;
