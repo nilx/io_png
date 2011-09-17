@@ -219,7 +219,7 @@ static void _io_png_deinterlace(png_byte * png_data, size_t csize, size_t nc)
  * This function is currently useless, but is inserted to help for the
  * float-based transition.
  *
- * @param data array to convert
+ * @param png_data array to convert
  * @param size array size
  * @return converted array
  *
@@ -243,7 +243,7 @@ static unsigned char *_io_png_to_uchar(png_byte * png_data, size_t size)
 /**
  * @brief convert raw png data to float
  *
- * @param data array to convert
+ * @param png_data array to convert
  * @param size array size
  * @return converted array
  *
@@ -262,6 +262,35 @@ static float *_io_png_to_flt(png_byte * png_data, size_t size)
         data[i] = (float) png_data[i];
 
     return data;
+}
+
+/**
+ * @brief convert raw png gray to rgb
+ *
+ * @param png_data array to convert
+ * @param size array size
+ * @return converted array (via realloc())
+ *
+ * @todo restrict keyword
+ */
+static png_byte *_io_png_gray_to_rgb(png_byte * png_data, size_t size)
+{
+    size_t i;
+    png_byte *r, *g, *b;
+
+    if (NULL == png_data || 0 == size)
+        _IO_PNG_ABORT("bad parameters");
+
+    png_data = _IO_PNG_SAFE_REALLOC(png_data, 3 * size, png_byte);
+    r = png_data;
+    g = png_data + size;
+    b = png_data + 2 * size;
+    for (i = 0; i < size; i++) {
+        g[i] = r[i];
+        b[i] = r[i];
+    }
+
+    return png_data;
 }
 
 /*
@@ -420,28 +449,14 @@ unsigned char *io_png_read_uchar_rgb(const char *fname, size_t * nxp,
         nc -= 1;
         png_data = _IO_PNG_SAFE_REALLOC(png_data, nc * *nxp * *nyp, png_byte);
     }
+    /* gray->rgb */
+    if (1 == nc) {
+        nc = 3;
+        png_data = _io_png_gray_to_rgb(png_data, *nxp * *nyp);
+    }
     /* convert to uchar */
     data = _io_png_to_uchar(png_data, *nxp * *nyp * nc);
     free(png_data);
-
-    if (1 == nc) {
-        /* convert to RGB */
-        size_t i, size;
-        unsigned char *data_r, *data_g, *data_b;
-
-        /* resize the image */
-        size = *nxp * *nyp;
-        data = _IO_PNG_SAFE_REALLOC(data, 3 * size, unsigned char);
-        data_r = data;
-        data_g = data + size;
-        data_b = data + 2 * size;
-
-        /* gray->RGB conversion */
-        for (i = 0; i < size; i++) {
-            data_g[i] = data_r[i];
-            data_b[i] = data_r[i];
-        }
-    }
 
     return data;
 }
@@ -564,28 +579,14 @@ float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
         nc -= 1;
         png_data = _IO_PNG_SAFE_REALLOC(png_data, nc * *nxp * *nyp, png_byte);
     }
+    /* gray->rgb */
+    if (1 == nc) {
+        nc = 3;
+        png_data = _io_png_gray_to_rgb(png_data, *nxp * *nyp);
+    }
     /* convert to flt */
     data = _io_png_to_flt(png_data, *nxp * *nyp * nc);
     free(png_data);
-
-    if (1 == nc) {
-        /* convert to RGB */
-        size_t i, size;
-        float *data_r, *data_g, *data_b;
-
-        /* resize the image */
-        size = *nxp * *nyp;
-        data = _IO_PNG_SAFE_REALLOC(data, 3 * size, float);
-        data_r = data;
-        data_g = data + size;
-        data_b = data + 2 * size;
-
-        /* gray->RGB conversion */
-        for (i = 0; i < size; i++) {
-            data_g[i] = data_r[i];
-            data_b[i] = data_r[i];
-        }
-    }
 
     return data;
 }
