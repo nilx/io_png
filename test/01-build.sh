@@ -25,8 +25,9 @@ _test_ldd() {
 _log_init
 
 echo "* default build, test, clean, rebuild"
-_log make distclean
-_log make
+_log make -B debug
+_log _test_mmms
+_log make -B
 _log _test_mmms
 _log make
 _log make clean

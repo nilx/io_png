@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <limits.h>
+#include <assert.h>
 
 /* option to use a local version of the libpng */
 #ifdef IO_PNG_LOCAL_LIBPNG
@@ -143,8 +144,8 @@ static float *_io_png_inter(const float *data, size_t csize, size_t nc)
     size_t i, size;
     float *tmp;
 
-    if (NULL == data || 0 == csize || 0 == nc)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != data && 0 != csize && 0 != nc);
+
     if (1 == nc || 1 == csize) {
         /* duplicate */
         tmp = _IO_PNG_SAFE_MALLOC(csize * nc, float);
@@ -178,8 +179,8 @@ static float *_io_png_deinter(const float *data, size_t csize, size_t nc)
     size_t i, size;
     float *tmp;
 
-    if (NULL == data || 0 == csize || 0 == nc)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != data && 0 != csize && 0 != nc);
+
     if (1 == nc || 1 == csize) {
         /* duplicate */
         tmp = _IO_PNG_SAFE_MALLOC(csize * nc, float);
@@ -210,8 +211,7 @@ static float *_io_png_byte2flt(const png_byte * png_data, size_t size)
     size_t i;
     float *data;
 
-    if (NULL == png_data || 0 == size)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != png_data && 0 != size);
 
     data = _IO_PNG_SAFE_MALLOC(size, float);
     for (i = 0; i < size; i++)
@@ -235,8 +235,7 @@ static float *_io_png_uchar2flt(const unsigned char *uchar_data, size_t size)
     size_t i;
     float *data;
 
-    if (NULL == uchar_data || 0 == size)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != uchar_data && 0 != size);
 
     data = _IO_PNG_SAFE_MALLOC(size, float);
     for (i = 0; i < size; i++)
@@ -259,8 +258,7 @@ static float *_io_png_ushrt2flt(const unsigned char *ushrt_data, size_t size)
     size_t i;
     float *data;
 
-    if (NULL == ushrt_data || 0 == size)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != ushrt_data && 0 != size);
 
     data = _IO_PNG_SAFE_MALLOC(size, float);
     for (i = 0; i < size; i++)
@@ -284,8 +282,7 @@ static png_byte *_io_png_flt2byte(const float *data, size_t size)
     png_byte *png_data;
     float tmp;
 
-    if (NULL == data || 0 == size)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != data && 0 != size);
 
     png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
     for (i = 0; i < size; i++) {
@@ -312,8 +309,7 @@ static unsigned char *_io_png_flt2uchar(const float *data, size_t size)
     unsigned char *uchar_data;
     float tmp;
 
-    if (NULL == data || 0 == size)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != data && 0 != size);
 
     uchar_data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
     for (i = 0; i < size; i++) {
@@ -326,7 +322,7 @@ static unsigned char *_io_png_flt2uchar(const float *data, size_t size)
 }
 
 /**
- * @brief convert raw png gray to rgb
+ * @brief convert float gray to rgb
  *
  * @param data array to convert
  * @param size array size
@@ -334,8 +330,7 @@ static unsigned char *_io_png_flt2uchar(const float *data, size_t size)
  */
 static float *_io_png_gray2rgb(float *data, size_t size)
 {
-    if (NULL == data || 0 == size)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != data && 0 != size);
 
     data = _IO_PNG_SAFE_REALLOC(data, 3 * size, float);
     memcpy(data + size, data, size * sizeof(float));
@@ -345,7 +340,7 @@ static float *_io_png_gray2rgb(float *data, size_t size)
 }
 
 /**
- * @brief convert raw png rgb to gray
+ * @brief convert float rgb to gray
  *
  * Y = Cr* R + Cg * G + Cb * B
  * with
@@ -366,8 +361,7 @@ static float *_io_png_rgb2gray(float *data, size_t size)
     size_t i;
     float *r, *g, *b;
 
-    if (NULL == data || 0 == size || 0 != (size % 3))
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != data && 0 != size);
 
     size /= 3;
     r = data;
@@ -421,10 +415,8 @@ static float *_io_png_read(const char *fname,
     /* local error structure */
     _io_png_err_t err;
 
-    /* parameters check */
-    if (NULL == fname || NULL == option
-        || NULL == nxp || NULL == nyp || NULL == ncp)
-        _IO_PNG_ABORT("bad parameters");
+    assert(NULL != fname && NULL != option
+           && NULL != nxp && NULL != nyp && NULL != ncp);
 
     /* open the PNG input file */
     if (0 == strcmp(fname, "-"))
@@ -689,6 +681,8 @@ static void _io_png_write(const char *fname, const float *data,
     /* error structure */
     _io_png_err_t err;
 
+    assert(NULL != fname && NULL != data && 0 < nx && 0 < ny && 0 < nc);
+
     /* interlace RRR GGG BBB AAA to RGBA RGBA RGBA */
     tmp = _io_png_inter(data, nx * ny, nc);
     /* convert to png_byte */
@@ -783,10 +777,6 @@ static void _io_png_write(const char *fname, const float *data,
 void io_png_write_flt(const char *fname, const float *data,
                       size_t nx, size_t ny, size_t nc)
 {
-    /* parameters check */
-    if (0 >= nx || 0 >= ny || 0 >= nc || NULL == fname || NULL == data)
-        _IO_PNG_ABORT("bad parameters");
-
     _io_png_write(fname, data, nx, ny, nc);
     return;
 }
@@ -808,13 +798,7 @@ void io_png_write_uchar(const char *fname, const unsigned char *data,
 {
     float *flt_data;
 
-    /* parameters check */
-    if (0 >= nx || 0 >= ny || 0 >= nc || NULL == fname || NULL == data)
-        _IO_PNG_ABORT("bad parameters");
-
-    /* convert from unsigned char to float */
     flt_data = _io_png_uchar2flt(data, nx * ny * nc);
-
     _io_png_write(fname, flt_data, nx, ny, nc);
     free(flt_data);
     return;
@@ -839,13 +823,7 @@ void io_png_write_ushrt(const char *fname, const unsigned char *data,
 {
     float *flt_data;
 
-    /* parameters check */
-    if (0 >= nx || 0 >= ny || 0 >= nc || NULL == fname || NULL == data)
-        _IO_PNG_ABORT("bad parameters");
-
-    /* convert from unsigned char to float */
     flt_data = _io_png_ushrt2flt(data, nx * ny * nc);
-
     _io_png_write(fname, flt_data, nx, ny, nc);
     free(flt_data);
     return;
