@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     /*
      * from now on we suppose the image has RGB channels
      * this can be forced by using
-     * read_png_flt_rgb() instead of read_png_flt()
+     * read_png_pp_flt(..., "rgb") instead of read_png_flt()
      */
 
     if (3 <= nc) {
@@ -101,11 +101,11 @@ int main(int argc, char **argv)
      * to handle colorspace conversion
      */
     /* read as RGB, and save */
-    img = io_png_read_flt_rgb(argv[1], &nx, &ny);
+    img = io_png_read_pp_flt(argv[1], &nx, &ny, NULL, "rgb");
     io_png_write_flt(argv[2], img, nx, ny, 3);
     free(img);
     /* read as gray, and save */
-    img = io_png_read_flt_gray(argv[1], &nx, &ny);
+    img = io_png_read_pp_flt(argv[1], &nx, &ny, NULL, "gray");
     io_png_write_flt(argv[2], img, nx, ny, 1);
     free(img);
 

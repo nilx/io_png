@@ -88,22 +88,22 @@ static float *io_png_read_mode(const char *fname,
         break;
     case FLT_GRAY:
         *nc = 1;
-        img = io_png_read_flt_gray(fname, nx, ny);
+        img = io_png_read_pp_flt(fname, nx, ny, NULL, "gray");
         break;
     case FLT_RGB:
         *nc = 3;
-        img = io_png_read_flt_rgb(fname, nx, ny);
+        img = io_png_read_pp_flt(fname, nx, ny, NULL, "rgb");
         break;
     case UCHAR:
         img_uchar = io_png_read_uchar(fname, nx, ny, nc);
         break;
     case UCHAR_GRAY:
         *nc = 1;
-        img_uchar = io_png_read_uchar_gray(fname, nx, ny);
+        img_uchar = io_png_read_pp_uchar(fname, nx, ny, NULL, "gray");
         break;
     case UCHAR_RGB:
         *nc = 3;
-        img_uchar = io_png_read_uchar_rgb(fname, nx, ny);
+        img_uchar = io_png_read_pp_uchar(fname, nx, ny, NULL, "rgb");
         break;
     default:
         abort();

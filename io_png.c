@@ -492,9 +492,47 @@ static float *_io_png_read(const char *fname,
 }
 
 /**
+ * @brief read a PNG file into a float array with some post-processing
+ *
+ * The image is read into an array with the deinterlaced channels,
+ * with values in [0,1]. The option parameter is a string whose
+ * content defines the filters applied to the image data:
+ * - "": do nothing
+ * - "rgb": strip the alpha channel, convert gray images to rgb
+ * - "gray": strip the alpha channel, convert rgb images to gray
+ *
+ * @param fname PNG file name
+ * @param nxp, nyp, ncp pointers to variables to be filled with the number of
+ *        columns, lines and channels of the image, if not NULL
+ * @option post-processing option string
+ * @return pointer to an array of pixels, abort() on error
+ */
+float *io_png_read_pp_flt(const char *fname,
+                          size_t * nxp, size_t * nyp, size_t * ncp,
+                          const char *option)
+{
+    float *flt_data;
+    size_t nx, ny, nc;
+
+    if (NULL == fname || NULL == option)
+        _IO_PNG_ABORT("bad parameters");
+
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, option);
+
+    if (NULL != nxp)
+        *nxp = nx;
+    if (NULL != nyp)
+        *nyp = ny;
+    if (NULL != ncp)
+        *ncp = nc;
+    return flt_data;
+}
+
+/**
  * @brief read a PNG file into a float array
  *
- * The array contains the deinterlaced channels, with values in [0,1].
+ * The image is read into an array with the deinterlaced channels,
+ * with values in [0,1].
  *
  * @param fname PNG file name
  * @param nxp, nyp, ncp pointers to variables to be filled with the number of
@@ -504,57 +542,45 @@ static float *_io_png_read(const char *fname,
 float *io_png_read_flt(const char *fname,
                        size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    float *flt_data;
-    size_t nx, ny, nc;
-
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "");
-
-    *nxp = nx;
-    *nyp = ny;
-    *ncp = nc;
-    return flt_data;
+    return io_png_read_pp_flt(fname, nxp, nyp, ncp, "");
 }
 
 /**
- * @brief read a PNG file into a float array, converted to RGB
+ * @brief read a PNG file into an unsigned char array with some post-processing
  *
- * See io_png_read_flt() for details.
+ * The image is read into an array with the deinterlaced channels,
+ * with values in [0,UCHAR_MAX]. See  io_png_read_pp_flt() for
+ * details.
  */
-float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
+unsigned char *io_png_read_pp_uchar(const char *fname,
+                                    size_t * nxp, size_t * nyp, size_t * ncp,
+                                    const char *option)
 {
     float *flt_data;
+    unsigned char *data;
     size_t nx, ny, nc;
 
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
+    if (NULL == fname || NULL == option)
+        _IO_PNG_ABORT("bad parameters");
 
-    *nxp = nx;
-    *nyp = ny;
-    return flt_data;
-}
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, option);
+    data = _io_png_flt2uchar(flt_data, nx * ny * nc);
+    free(flt_data);
 
-/**
- * @brief read a PNG file into a float array, converted to gray
- *
- * See io_png_read_flt() for details.
- */
-float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
-{
-    float *flt_data;
-    size_t nx, ny, nc;
-
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "gray");
-
-    *nxp = nx;
-    *nyp = ny;
-    return flt_data;
+    if (NULL != nxp)
+        *nxp = nx;
+    if (NULL != nyp)
+        *nyp = ny;
+    if (NULL != ncp)
+        *ncp = nc;
+    return data;
 }
 
 /**
  * @brief read a PNG file into an unsigned char array
  *
- * The array contains the de-interlaced channels, with values in [0,UCHAR_MAX].
- *
- * @todo don't downscale 16bit images.
+ * The array contains the de-interlaced channels, with values in
+ * [0,UCHAR_MAX].
  *
  * @param fname PNG file name
  * @param nxp, nyp, ncp pointers to variables to be filled with the number of
@@ -564,68 +590,42 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
 unsigned char *io_png_read_uchar(const char *fname,
                                  size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    float *flt_data;
-    unsigned char *data;
-    size_t nx, ny, nc;
-
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "");
-    data = _io_png_flt2uchar(flt_data, nx * ny * nc);
-    free(flt_data);
-
-    *nxp = nx;
-    *nyp = ny;
-    *ncp = nc;
-    return data;
+    return io_png_read_pp_uchar(fname, nxp, nyp, ncp, "");
 }
 
 /**
- * @brief read a PNG file into an unsigned char array, converted to RGB
+ * @brief read a PNG file into an unsigned short array with some post-processing
  *
- * See io_png_read_uchar() for details.
+ * The image is read into an array with the deinterlaced channels,
+ * with values in [0,USHRT_MAX]. See  io_png_read_pp_uchar() for
+ * details.
  */
-unsigned char *io_png_read_uchar_rgb(const char *fname, size_t * nxp,
-                                     size_t * nyp)
+unsigned short *io_png_read_pp_ushrt(const char *fname,
+                                     size_t * nxp, size_t * nyp, size_t * ncp,
+                                     const char *option)
 {
     float *flt_data;
-    unsigned char *data;
+    unsigned short *data;
     size_t nx, ny, nc;
 
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
-    data = _io_png_flt2uchar(flt_data, nx * ny * nc);
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, option);
+    data = _io_png_flt2ushrt(flt_data, nx * ny * nc);
     free(flt_data);
 
-    *nxp = nx;
-    *nyp = ny;
-    return data;
-}
-
-/**
- * @brief read a PNG file into an unsigned char array, converted to gray
- *
- * See io_png_read_uchar() for details.
- */
-unsigned char *io_png_read_uchar_gray(const char *fname,
-                                      size_t * nxp, size_t * nyp)
-{
-    float *flt_data;
-    unsigned char *data;
-    size_t nx, ny, nc;
-
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "gray");
-    data = _io_png_flt2uchar(flt_data, nx * ny * nc);
-    free(flt_data);
-
-    *nxp = nx;
-    *nyp = ny;
+    if (NULL != nxp)
+        *nxp = nx;
+    if (NULL != nyp)
+        *nyp = ny;
+    if (NULL != ncp)
+        *ncp = nc;
     return data;
 }
 
 /**
  * @brief read a PNG file into an unsigned short array
  *
- * The array contains the de-interlaced channels, with values in [0,USHRT_MAX].
- *
- * @todo don't downscale 16bit images.
+ * The array contains the de-interlaced channels, with values in
+ * [0,USHRT_MAX].
  *
  * @param fname PNG file name
  * @param nxp, nyp, ncp pointers to variables to be filled with the number of
@@ -635,60 +635,7 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
 unsigned short *io_png_read_ushrt(const char *fname,
                                   size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    float *flt_data;
-    unsigned short *data;
-    size_t nx, ny, nc;
-
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "");
-    data = _io_png_flt2ushrt(flt_data, nx * ny * nc);
-    free(flt_data);
-
-    *nxp = nx;
-    *nyp = ny;
-    *ncp = nc;
-    return data;
-}
-
-/**
- * @brief read a PNG file into an unsigned short array, converted to RGB
- *
- * See io_png_read_ushrt() for details.
- */
-unsigned short *io_png_read_ushrt_rgb(const char *fname, size_t * nxp,
-                                      size_t * nyp)
-{
-    float *flt_data;
-    unsigned short *data;
-    size_t nx, ny, nc;
-
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
-    data = _io_png_flt2ushrt(flt_data, nx * ny * nc);
-    free(flt_data);
-
-    *nxp = nx;
-    *nyp = ny;
-    return data;
-}
-
-/**
- * @brief read a PNG file into an unsigned short array, converted to gray
- *
- * See io_png_read_ushrt() for details.
- */
-unsigned short *io_png_read_ushrt_gray(const char *fname,
-                                       size_t * nxp, size_t * nyp)
-{
-    float *flt_data;
-    unsigned short *data;
-    size_t nx, ny, nc;
-
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, "gray");
-    data = _io_png_flt2ushrt(flt_data, nx * ny * nc);
-    free(flt_data);
-
-    *nxp = nx;
-    *nyp = ny;
-    return data;
+    return io_png_read_pp_ushrt(fname, nxp, nyp, ncp, "");
 }
 
 /*
