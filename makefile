@@ -70,7 +70,7 @@ PROJECT	= io_png
 DATE	= $(shell date -u +%Y%m%d)
 RELEASE_TAG   = 0.$(DATE)
 
-.PHONY	: srcdoc lint beautify test release
+.PHONY	: srcdoc lint beautify debug test release
 # source documentation
 srcdoc	: $(SRC)
 	doxygen doc/doxygen.conf
@@ -89,6 +89,9 @@ lint	: $(SRC)
 	for FILE in $^; do \
 		splint -ansi-lib -weak -I. $$FILE || exit 1; done;
 	$(RM) *.plist
+# debug build
+debug	: $(SRC)
+	$(MAKE) CFLAGS=-g LDFLAGS="$(LDFLAGS) -lefence"
 # code tests
 test	: $(SRC)
 	sh -e test/run.sh && echo SUCCESS || ( echo ERROR; return 1)
