@@ -17,7 +17,7 @@ _test_mmms() {
     example/mmms data/lena_ga.png >> $TEMPFILE
     example/mmms data/lena_rgb.png >> $TEMPFILE
     example/mmms data/lena_rgba.png >> $TEMPFILE
-    test "4ca030cd17dfe18de1db921a26b1f818  $TEMPFILE" \
+    test "97c63ea85b24792ad112f5dafe56243b  $TEMPFILE" \
 	= "$(md5sum $TEMPFILE)"
     rm -f $TEMPFILE
 }

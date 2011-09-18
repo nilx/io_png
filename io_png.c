@@ -66,10 +66,10 @@ char *io_png_info(void)
  */
 
 /** @brief abort() wrapper macro with an error message */
-#define _IO_PNG_ABORT(MSG) do {					\
+#define _IO_PNG_ABORT(MSG) do {                                 \
     fprintf(stderr, "%s:%04u : %s\n", __FILE__, __LINE__, MSG); \
-    fflush(stderr);						\
-    abort();							\
+    fflush(stderr);                                             \
+    abort();                                                    \
     } while (0);
 
 /** @brief safe malloc wrapper */
@@ -197,67 +197,63 @@ static png_byte *_io_png_deinterlace(png_byte * png_data, size_t csize,
 }
 
 /**
- * @brief convert raw png data to unsigned char
+ * @brief convert png_byte array to unsigned char
  *
- * This function is currently useless, but is inserted to help for the
- * float-based transition.
+ * Dummy function, for future float transition.
  *
  * @param png_data array to convert
  * @param size array size
  * @return converted array
- *
- * @todo check types, real conversion
  */
 static unsigned char *_io_png_to_uchar(const png_byte * png_data, size_t size)
 {
-    size_t i;
     unsigned char *data;
+
+    if (UCHAR_MAX != 255 || sizeof(png_byte) != sizeof(unsigned char))
+        _IO_PNG_ABORT("no suport support for png_byte != unsigned char");
 
     if (NULL == png_data || 0 == size)
         _IO_PNG_ABORT("bad parameters");
 
     data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
-    for (i = 0; i < size; i++)
-        data[i] = (unsigned char) png_data[i];
+    memcpy(data, png_data, size * sizeof(png_byte));
 
     return data;
 }
 
 /**
- * @brief convert to raw png data from unsigned char
+ * @brief convert unsigned char array to png_byte
  *
- * This function is currently useless, but is inserted to help for the
- * float-based transition.
+ * Dummy function, for future float transition.
  *
  * @param data array to convert
  * @param size array size
  * @return converted array
- *
- * @todo check types, real conversion
  */
 static png_byte *_io_png_from_uchar(const unsigned char *data, size_t size)
 {
-    size_t i;
     png_byte *png_data;
+
+    if (UCHAR_MAX != 255 || sizeof(png_byte) != sizeof(unsigned char))
+        _IO_PNG_ABORT("no suport support for png_byte != unsigned char");
 
     if (NULL == data || 0 == size)
         _IO_PNG_ABORT("bad parameters");
 
     png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
-    for (i = 0; i < size; i++)
-        png_data[i] = (png_byte) data[i];
+    memcpy(png_data, data, size * sizeof(unsigned char));
 
     return png_data;
 }
 
 /**
- * @brief convert raw png data to float
+ * @brief convert png_byte array to float
  *
  * @param png_data array to convert
  * @param size array size
  * @return converted array
  *
- * @todo real sampling
+ * @todo use lookup table instead of division?
  */
 static float *_io_png_to_flt(const png_byte * png_data, size_t size)
 {
@@ -269,19 +265,20 @@ static float *_io_png_to_flt(const png_byte * png_data, size_t size)
 
     data = _IO_PNG_SAFE_MALLOC(size, float);
     for (i = 0; i < size; i++)
-        data[i] = (float) png_data[i];
+        /* png_byte is 8bit unsigned, [0..255] */
+        data[i] = (float) (png_data[i] / 255.);
 
     return data;
 }
 
 /**
- * @brief convert to raw png data from float
+ * @brief convert float array to png_byte
  *
  * @param data array to convert
  * @param size array size
  * @return converted array
  *
- * @todo real sampling
+ * @todo bit twiddling instead of (?:) branching?
  */
 static png_byte *_io_png_from_flt(const float *data, size_t size)
 {
@@ -294,7 +291,8 @@ static png_byte *_io_png_from_flt(const float *data, size_t size)
 
     png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
     for (i = 0; i < size; i++) {
-        tmp = floor(data[i] + .5);
+        /* png_byte is 8bit data unsigned, [0..255] */
+        tmp = data[i] * 255. + .5;
         png_data[i] = (png_byte) (tmp < 0. ? 0. : (tmp > 255. ? 255. : tmp));
     }
 
@@ -308,7 +306,7 @@ static png_byte *_io_png_from_flt(const float *data, size_t size)
  * @param size array size
  * @return converted array (via realloc())
  *
- * @todo restrict keyword
+ * @todo restrict keyword?
  */
 static png_byte *_io_png_gray_to_rgb(png_byte * png_data, size_t size)
 {
@@ -347,7 +345,7 @@ static png_byte *_io_png_gray_to_rgb(png_byte * png_data, size_t size)
  * @param size array size
  * @return converted array (via realloc())
  *
- * @todo restrict keyword
+ * @todo restrict keyword?
  */
 static png_byte *_io_png_rgb_to_gray(png_byte * png_data, size_t size)
 {
