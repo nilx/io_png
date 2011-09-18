@@ -374,10 +374,13 @@ static float *_io_png_rgb2gray(float *data, size_t size)
  * @param fname PNG file name, "-" means stdin
  * @param nxp, nyp, ncp pointers to variables to be filled
  *        with the number of columns, lines and channels of the image
+ * @option post-processing option string, can be "rgb" or "gray",
+ *         "" to do nothing
  * @return pointer to an array of float pixels, abort() on error
  */
 static float *_io_png_read(const char *fname,
-                           size_t * nxp, size_t * nyp, size_t * ncp)
+                           size_t * nxp, size_t * nyp, size_t * ncp,
+                           const char *option)
 {
     png_byte png_sig[PNG_SIG_LEN];
     png_structp png_ptr;
@@ -395,7 +398,8 @@ static float *_io_png_read(const char *fname,
     _io_png_err_t err;
 
     /* parameters check */
-    if (NULL == fname || NULL == nxp || NULL == nyp || NULL == ncp)
+    if (NULL == fname || NULL == option
+        || NULL == nxp || NULL == nyp || NULL == ncp)
         _IO_PNG_ABORT("bad parameters");
 
     /* open the PNG input file */
@@ -472,6 +476,24 @@ static float *_io_png_read(const char *fname,
     data = _io_png_deinter(tmp, nx * ny, nc);
     free(tmp);
 
+    /* post-processing */
+    if ((0 == strcmp("rgb", option)
+         || 0 == strcmp("gray", option))
+        && (4 == nc || 2 == nc)) {
+        /* strip alpha channel ... */
+        data = _IO_PNG_SAFE_REALLOC(data, nx * ny * (nc - 1), float);
+        nc = (nc - 1);
+    }
+    if (0 == strcmp("rgb", option) && 1 == nc) {
+        /* gray->rgb */
+        data = _io_png_gray2rgb(data, nx * ny);
+        nc = 3;
+    }
+    if (0 == strcmp("gray", option) && 3 == nc) {
+        data = _io_png_rgb2gray(data, nx * ny * nc);
+        nc = 1;
+    }
+
     *nxp = nx;
     *nyp = ny;
     *ncp = nc;
@@ -494,8 +516,7 @@ float *io_png_read_flt(const char *fname,
     float *data;
     size_t nx, ny, nc;
 
-    /* read the image */
-    data = _io_png_read(fname, &nx, &ny, &nc);
+    data = _io_png_read(fname, &nx, &ny, &nc, "");
 
     *nxp = nx;
     *nyp = ny;
@@ -513,18 +534,7 @@ float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
     float *data;
     size_t nx, ny, nc;
 
-    /* read the image */
-    data = _io_png_read(fname, &nx, &ny, &nc);
-    /* strip alpha channel ... */
-    if (4 == nc || 2 == nc) {
-        data = _IO_PNG_SAFE_REALLOC(data, nx * ny * (nc - 1), float);
-        nc = (nc - 1);
-    }
-    /* gray->rgb */
-    if (1 == nc) {
-        data = _io_png_gray2rgb(data, nx * ny);
-        nc = 3;
-    }
+    data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
 
     *nxp = nx;
     *nyp = ny;
@@ -541,18 +551,7 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
     float *data;
     size_t nx, ny, nc;
 
-    /* read the image */
-    data = _io_png_read(fname, &nx, &ny, &nc);
-    /* strip alpha channel ... */
-    if (4 == nc || 2 == nc) {
-        data = _IO_PNG_SAFE_REALLOC(data, nx * ny * (nc - 1), float);
-        nc = nc - 1;
-    }
-    /* rgb->gray */
-    if (3 == nc) {
-        data = _io_png_rgb2gray(data, nx * ny * nc);
-        nc = 1;
-    }
+    data = _io_png_read(fname, &nx, &ny, &nc, "gray");
 
     *nxp = nx;
     *nyp = ny;
@@ -579,9 +578,7 @@ unsigned char *io_png_read_uchar(const char *fname,
     unsigned char *uchar_data;
     size_t nx, ny, nc;
 
-    /* read the image */
-    data = _io_png_read(fname, &nx, &ny, &nc);
-    /* convert to uchar */
+    data = _io_png_read(fname, &nx, &ny, &nc, "");
     uchar_data = _io_png_flt2uchar(data, nx * ny * nc);
     free(data);
 
@@ -603,19 +600,7 @@ unsigned char *io_png_read_uchar_rgb(const char *fname, size_t * nxp,
     unsigned char *uchar_data;
     size_t nx, ny, nc;
 
-    /* read the image */
-    data = _io_png_read(fname, &nx, &ny, &nc);
-    /* strip alpha channel ... */
-    if (4 == nc || 2 == nc) {
-        data = _IO_PNG_SAFE_REALLOC(data, nx * ny * (nc - 1), float);
-        nc = nc - 1;
-    }
-    /* gray->rgb */
-    if (1 == nc) {
-        data = _io_png_gray2rgb(data, nx * ny);
-        nc = 3;
-    }
-    /* convert to uchar */
+    data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
     uchar_data = _io_png_flt2uchar(data, nx * ny * nc);
     free(data);
 
@@ -636,19 +621,7 @@ unsigned char *io_png_read_uchar_gray(const char *fname,
     unsigned char *uchar_data;
     size_t nx, ny, nc;
 
-    /* read the image */
-    data = _io_png_read(fname, &nx, &ny, &nc);
-    /* strip alpha channel ... */
-    if (4 == nc || 2 == nc) {
-        data = _IO_PNG_SAFE_REALLOC(data, nx * ny * (nc - 1), float);
-        nc = (nc - 1);
-    }
-    /* rgb->gray */
-    if (3 == nc) {
-        data = _io_png_rgb2gray(data, nx * ny * nc);
-        nc = 1;
-    }
-    /* convert to uchar */
+    data = _io_png_read(fname, &nx, &ny, &nc, "gray");
     uchar_data = _io_png_flt2uchar(data, nx * ny * nc);
     free(data);
 
