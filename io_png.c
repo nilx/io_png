@@ -222,6 +222,54 @@ static float *_io_png_byte2flt(const png_byte * png_data, size_t size)
 }
 
 /**
+ * @brief convert unsigned char array to float
+ *
+ * @param uchar_data array to convert
+ * @param size array size
+ * @return converted array
+ *
+ * @todo use lookup table instead of division?
+ */
+static float *_io_png_uchar2flt(const unsigned char *uchar_data, size_t size)
+{
+    size_t i;
+    float *data;
+
+    if (NULL == uchar_data || 0 == size)
+        _IO_PNG_ABORT("bad parameters");
+
+    data = _IO_PNG_SAFE_MALLOC(size, float);
+    for (i = 0; i < size; i++)
+        data[i] = (float) (uchar_data[i]) / (float) (UCHAR_MAX);
+
+    return data;
+}
+
+/**
+ * @brief convert unsigned short array to float
+ *
+ * @param ushrt_data array to convert
+ * @param size array size
+ * @return converted array
+ *
+ * @todo use lookup table instead of division?
+ */
+static float *_io_png_ushrt2flt(const unsigned char *ushrt_data, size_t size)
+{
+    size_t i;
+    float *data;
+
+    if (NULL == ushrt_data || 0 == size)
+        _IO_PNG_ABORT("bad parameters");
+
+    data = _IO_PNG_SAFE_MALLOC(size, float);
+    for (i = 0; i < size; i++)
+        data[i] = (float) (ushrt_data[i]) / (float) (USHRT_MAX);
+
+    return data;
+}
+
+/**
  * @brief convert float array to png_byte
  *
  * @param data array to convert
@@ -247,30 +295,6 @@ static png_byte *_io_png_flt2byte(const float *data, size_t size)
     }
 
     return png_data;
-}
-
-/**
- * @brief convert unsigned char array to float
- *
- * @param uchar_data array to convert
- * @param size array size
- * @return converted array
- *
- * @todo use lookup table instead of division?
- */
-static float *_io_png_uchar2flt(const unsigned char *uchar_data, size_t size)
-{
-    size_t i;
-    float *data;
-
-    if (NULL == uchar_data || 0 == size)
-        _IO_PNG_ABORT("bad parameters");
-
-    data = _IO_PNG_SAFE_MALLOC(size, float);
-    for (i = 0; i < size; i++)
-        data[i] = (float) (uchar_data[i]) / (float) (UCHAR_MAX);
-
-    return data;
 }
 
 /**
@@ -778,8 +802,6 @@ void io_png_write_flt(const char *fname, const float *data,
  * @param data deinterlaced (RRR.GGG.BBB.AAA.) array to write
  * @param nx, ny, nc number of columns, lines and channels of the image
  * @return void, abort() on error
- *
- * @todo add type width checks
  */
 void io_png_write_uchar(const char *fname, const unsigned char *data,
                         size_t nx, size_t ny, size_t nc)
@@ -792,6 +814,37 @@ void io_png_write_uchar(const char *fname, const unsigned char *data,
 
     /* convert from unsigned char to float */
     flt_data = _io_png_uchar2flt(data, nx * ny * nc);
+
+    _io_png_write(fname, flt_data, nx, ny, nc);
+    free(flt_data);
+    return;
+}
+
+/**
+ * @brief write an unsigned short array into a 8bit PNG file
+ *
+ * The array values are taken from the [0,USHRT_MAX] interval and
+ * converted to float in the [0,1] interval before being saved as 8bit
+ * fixed-point data.
+ *
+ * @param fname PNG file name
+ * @param data deinterlaced (RRR.GGG.BBB.AAA.) array to write
+ * @param nx, ny, nc number of columns, lines and channels of the image
+ * @return void, abort() on error
+ *
+ * @todo save in 16bits
+ */
+void io_png_write_ushrt(const char *fname, const unsigned char *data,
+                        size_t nx, size_t ny, size_t nc)
+{
+    float *flt_data;
+
+    /* parameters check */
+    if (0 >= nx || 0 >= ny || 0 >= nc || NULL == fname || NULL == data)
+        _IO_PNG_ABORT("bad parameters");
+
+    /* convert from unsigned char to float */
+    flt_data = _io_png_ushrt2flt(data, nx * ny * nc);
 
     _io_png_write(fname, flt_data, nx, ny, nc);
     free(flt_data);

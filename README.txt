@@ -134,7 +134,7 @@ instead of `make`.
 
 # TODO
 
-* handle 16bit data
+* test 16bit data
 * cmake support
 * C++ wrappers (vector output, merged functions)
 * implement proper gamma and RGBY conversion
