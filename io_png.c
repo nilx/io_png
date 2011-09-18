@@ -131,15 +131,21 @@ static void _io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
  * TYPE AND IMAGE FORMAT CONVERSION
  */
 
+typedef enum _io_png_inter_e {
+    INTERLACE,
+    DEINTERLACE
+} _io_png_inter_t;
+
 /**
- * @brief interlace a float array
+ * @brief (de)interlace a float array
  *
  * @param data array to interlace
  * @param csize array size per channel
  * @param nc number of channels to interlace
  * @return new array
  */
-static float *_io_png_inter(const float *data, size_t csize, size_t nc)
+static float *_io_png_inter(const float *data, size_t csize, size_t nc,
+                            _io_png_inter_t option)
 {
     size_t i, size;
     float *tmp;
@@ -155,44 +161,25 @@ static float *_io_png_inter(const float *data, size_t csize, size_t nc)
 
     size = nc * csize;
     tmp = _IO_PNG_SAFE_MALLOC(size, float);
-    for (i = 0; i < size; i++)
-        /*
-         * set the i-th element of tmp, interlaced
-         * its channel is i % nc
-         * its position in this channel is i / nc
-         */
-        tmp[i] = data[i % nc * csize + i / nc];
 
-    return tmp;
-}
-
-/**
- * @brief deinterlace a float array
- *
- * @param data array to deinterlace
- * @param csize array size per channel
- * @param nc number of channels to deinterlace
- * @return new array
- */
-static float *_io_png_deinter(const float *data, size_t csize, size_t nc)
-{
-    size_t i, size;
-    float *tmp;
-
-    assert(NULL != data && 0 != csize && 0 != nc);
-
-    if (1 == nc || 1 == csize) {
-        /* duplicate */
-        tmp = _IO_PNG_SAFE_MALLOC(csize * nc, float);
-        memcpy(tmp, data, csize * nc * sizeof(float));
-        return tmp;
+    switch (option) {
+    case INTERLACE:
+        for (i = 0; i < size; i++)
+            /*
+             * set the i-th element of tmp, interlaced
+             * its channel is i % nc
+             * its position in this channel is i / nc
+             */
+            tmp[i] = data[i % nc * csize + i / nc];
+        break;
+    case DEINTERLACE:
+        for (i = 0; i < size; i++)
+            /* reverse */
+            tmp[i % nc * csize + i / nc] = data[i];
+        break;
+    default:
+        _IO_PNG_ABORT("bad parameters");
     }
-
-    size = nc * csize;
-    tmp = _IO_PNG_SAFE_MALLOC(size, float);
-    for (i = 0; i < size; i++)
-        /* see _io_png_inter() */
-        tmp[i % nc * csize + i / nc] = data[i];
 
     return tmp;
 }
@@ -464,7 +451,7 @@ static float *_io_png_read(const char *fname,
     tmp = _io_png_byte2flt(png_data, nx * ny * nc);
     free(png_data);
     /* deinterlace RGBA RGBA RGBA to RRR GGG BBB AAA */
-    data = _io_png_deinter(tmp, nx * ny, nc);
+    data = _io_png_inter(tmp, nx * ny, nc, DEINTERLACE);
     free(tmp);
 
     /* post-processing */
@@ -676,7 +663,7 @@ static void _io_png_write(const char *fname, const float *data,
     assert(NULL != fname && NULL != data && 0 < nx && 0 < ny && 0 < nc);
 
     /* interlace RRR GGG BBB AAA to RGBA RGBA RGBA */
-    tmp = _io_png_inter(data, nx * ny, nc);
+    tmp = _io_png_inter(data, nx * ny, nc, INTERLACE);
     /* convert to png_byte */
     png_data = _io_png_flt2byte(tmp, nx * ny * nc);
     free(tmp);
