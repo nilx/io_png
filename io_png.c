@@ -222,31 +222,6 @@ static unsigned char *_io_png_to_uchar(const png_byte * png_data, size_t size)
 }
 
 /**
- * @brief convert unsigned char array to png_byte
- *
- * Dummy function, for future float transition.
- *
- * @param data array to convert
- * @param size array size
- * @return converted array
- */
-static png_byte *_io_png_from_uchar(const unsigned char *data, size_t size)
-{
-    png_byte *png_data;
-
-    if (UCHAR_MAX != 255 || sizeof(png_byte) != sizeof(unsigned char))
-        _IO_PNG_ABORT("no suport support for png_byte != unsigned char");
-
-    if (NULL == data || 0 == size)
-        _IO_PNG_ABORT("bad parameters");
-
-    png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
-    memcpy(png_data, data, size * sizeof(unsigned char));
-
-    return png_data;
-}
-
-/**
  * @brief convert png_byte array to float
  *
  * @param png_data array to convert
@@ -266,7 +241,7 @@ static float *_io_png_byte2flt(const png_byte * png_data, size_t size)
     data = _IO_PNG_SAFE_MALLOC(size, float);
     for (i = 0; i < size; i++)
         /* png_byte is 8bit unsigned, [0..255] */
-        data[i] = (float) (png_data[i] / 255.);
+        data[i] = (float) (png_data[i]) / 255.;
 
     return data;
 }
@@ -297,6 +272,30 @@ static png_byte *_io_png_flt2byte(const float *data, size_t size)
     }
 
     return png_data;
+}
+
+/**
+ * @brief convert unsigned char array to float
+ *
+ * @param uchar_data array to convert
+ * @param size array size
+ * @return converted array
+ *
+ * @todo use lookup table instead of division?
+ */
+static float *_io_png_uchar2flt(const unsigned char *uchar_data, size_t size)
+{
+    size_t i;
+    float *data;
+
+    if (NULL == uchar_data || 0 == size)
+        _IO_PNG_ABORT("bad parameters");
+
+    data = _IO_PNG_SAFE_MALLOC(size, float);
+    for (i = 0; i < size; i++)
+        data[i] = (float) (uchar_data[i]) / (float) (UCHAR_MAX);
+
+    return data;
 }
 
 /**
@@ -710,16 +709,17 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
  * @todo in-place deinterlace
  *
  * @param fname PNG file name, "-" means stdout
- * @param png_data non interlaced (RRRGGGBBBAAA) byte image array
+ * @param data non interlaced (RRRGGGBBBAAA) float image array
  * @param nx, ny, nc number of columns, lines and channels
  * @return void, abort() on error
  */
-static void io_png_write_raw(const char *fname, png_byte * png_data,
-                             size_t nx, size_t ny, size_t nc)
+static void _io_png_write(const char *fname, const float *data,
+                          size_t nx, size_t ny, size_t nc)
 {
     png_structp png_ptr;
     png_infop info_ptr;
     png_bytep *row_pointers;
+    png_byte *png_data;
     png_byte bit_depth;
     /* volatile: because of setjmp/longjmp */
     FILE *volatile fp;
@@ -727,6 +727,9 @@ static void io_png_write_raw(const char *fname, png_byte * png_data,
     size_t i;
     /* error structure */
     _io_png_err_t err;
+
+    /* convert to png_byte */
+    png_data = _io_png_flt2byte(data, nx * ny * nc);
 
     /* interlace RRR GGG BBB AAA to RGBA RGBA RGBA */
     png_data = _io_png_interlace(png_data, nx * ny, nc);
@@ -804,12 +807,38 @@ static void io_png_write_raw(const char *fname, png_byte * png_data,
 }
 
 /**
- * @brief write an unsigned char array into a PNG file
+ * @brief write a float array into a PNG file
  *
- * The unsigned char values are casted into png_byte.
+ * The array values are taken from the [0,1] interval and converted to
+ * 8bit data.
+ *
+ * @todo save as 16bit images
  *
  * @param fname PNG file name
- * @param data deinterlaced array (RRRR..GGGG..BBBB..AAAA..) to write
+ * @param data deinterlaced (RRR.GGG.BBB.AAA.) array to write
+ * @param nx, ny, nc number of columns, lines and channels of the image
+ * @return void, abort() on error
+ */
+void io_png_write_flt(const char *fname, const float *data,
+                      size_t nx, size_t ny, size_t nc)
+{
+    /* parameters check */
+    if (0 >= nx || 0 >= ny || 0 >= nc || NULL == fname || NULL == data)
+        _IO_PNG_ABORT("bad parameters");
+
+    _io_png_write(fname, data, nx, ny, nc);
+    return;
+}
+
+/**
+ * @brief write an unsigned char array into a 8bit PNG file
+ *
+ * The array values are taken from the [0,UCHAR_MAX] interval and
+ * converted to float in the [0,1] interval before being saved as 8bit
+ * fixed-point data.
+ *
+ * @param fname PNG file name
+ * @param data deinterlaced (RRR.GGG.BBB.AAA.) array to write
  * @param nx, ny, nc number of columns, lines and channels of the image
  * @return void, abort() on error
  *
@@ -818,45 +847,16 @@ static void io_png_write_raw(const char *fname, png_byte * png_data,
 void io_png_write_uchar(const char *fname, const unsigned char *data,
                         size_t nx, size_t ny, size_t nc)
 {
-    png_byte *png_data;
+    float *flt_data;
 
     /* parameters check */
     if (0 >= nx || 0 >= ny || 0 >= nc || NULL == fname || NULL == data)
         _IO_PNG_ABORT("bad parameters");
 
-    /* convert from unsigned char to png_byte */
-    png_data = _io_png_from_uchar(data, nx * ny * nc);
+    /* convert from unsigned char to float */
+    flt_data = _io_png_uchar2flt(data, nx * ny * nc);
 
-    io_png_write_raw(fname, png_data, nx, ny, nc);
-    free(png_data);
-    return;
-}
-
-/**
- * @brief write a float array into a PNG file
- *
- * The float values are rounded to 8bit integers, and bounded to [0, 255].
- *
- * @todo handle 16bit images
- *
- * @param fname PNG file name
- * @param data array to write
- * @param nx, ny, nc number of columns, lines and channels of the image
- * @return void, abort() on error
- */
-void io_png_write_flt(const char *fname, const float *data,
-                      size_t nx, size_t ny, size_t nc)
-{
-    png_byte *png_data;
-
-    /* parameters check */
-    if (0 >= nx || 0 >= ny || 0 >= nc || NULL == fname || NULL == data)
-        _IO_PNG_ABORT("bad parameters");
-
-    /* convert from unsigned char to png_byte */
-    png_data = _io_png_flt2byte(data, nx * ny * nc);
-
-    io_png_write_raw(fname, png_data, nx, ny, nc);
-    free(png_data);
+    _io_png_write(fname, flt_data, nx, ny, nc);
+    free(flt_data);
     return;
 }
