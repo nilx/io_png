@@ -255,7 +255,7 @@ static png_byte *_io_png_from_uchar(const unsigned char *data, size_t size)
  *
  * @todo use lookup table instead of division?
  */
-static float *_io_png_to_flt(const png_byte * png_data, size_t size)
+static float *_io_png_byte2flt(const png_byte * png_data, size_t size)
 {
     size_t i;
     float *data;
@@ -280,7 +280,7 @@ static float *_io_png_to_flt(const png_byte * png_data, size_t size)
  *
  * @todo bit twiddling instead of (?:) branching?
  */
-static png_byte *_io_png_from_flt(const float *data, size_t size)
+static png_byte *_io_png_flt2byte(const float *data, size_t size)
 {
     size_t i;
     png_byte *png_data;
@@ -620,7 +620,7 @@ float *io_png_read_flt(const char *fname,
     /* read the raw image */
     png_data = _io_png_read_raw(fname, &nx, &ny, &nc);
     /* convert to flt */
-    data = _io_png_to_flt(png_data, nx * ny * nc);
+    data = _io_png_byte2flt(png_data, nx * ny * nc);
     free(png_data);
 
     *nxp = nx;
@@ -654,7 +654,7 @@ float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
         nc = 3;
     }
     /* convert to flt */
-    data = _io_png_to_flt(png_data, nx * ny * nc);
+    data = _io_png_byte2flt(png_data, nx * ny * nc);
     free(png_data);
 
     *nxp = nx;
@@ -687,7 +687,7 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
         nc = 1;
     }
     /* convert to flt */
-    data = _io_png_to_flt(png_data, nx * ny * nc);
+    data = _io_png_byte2flt(png_data, nx * ny * nc);
     free(png_data);
 
     *nxp = nx;
@@ -854,7 +854,7 @@ void io_png_write_flt(const char *fname, const float *data,
         _IO_PNG_ABORT("bad parameters");
 
     /* convert from unsigned char to png_byte */
-    png_data = _io_png_from_flt(data, nx * ny * nc);
+    png_data = _io_png_flt2byte(data, nx * ny * nc);
 
     io_png_write_raw(fname, png_data, nx, ny, nc);
     free(png_data);
