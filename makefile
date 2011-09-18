@@ -13,7 +13,7 @@ OBJ	= $(SRC:.c=.o)
 BIN	= $(filter example/%, $(SRC:.c=))
 
 # standard C compiler optimization options
-COPT	= -O2 -funroll-loops -fomit-frame-pointer
+COPT	= -O3 -DNDEBUG -funroll-loops -fomit-frame-pointer
 # complete C compiler options
 CFLAGS	= -ansi -pedantic -Wall -Wextra -Werror -pipe $(COPT)
 # linker options
