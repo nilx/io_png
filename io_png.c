@@ -53,16 +53,9 @@
  * INFO
  */
 
-/* string tag inserted into the binary */
+/** @brief string tag inserted into the binary */
 static char _io_png_tag[] = "using io_png " IO_PNG_VERSION;
-/**
- * @brief helps tracking versions, via the string tag inserted into
- * the library
- *
- * This function is not expected to be used in real-world programs.
- *
- * @return a pointer to a version info string
- */
+/** @brief helps tracking versions with the string tag */
 char *io_png_info(void)
 {
     return _io_png_tag;
@@ -72,20 +65,14 @@ char *io_png_info(void)
  * UTILS
  */
 
-/**
- * @brief abort() wrapper macro with an error message
- *
- * @todo file/line info
- */
-#define _IO_PNG_ABORT(MSG) do {                                         \
-        fputs(MSG, stderr);                                             \
-    fflush(stderr);                                                     \
-    abort();                                                            \
+/** @brief abort() wrapper macro with an error message */
+#define _IO_PNG_ABORT(MSG) do {					\
+    fprintf(stderr, "%s:%04u : %s\n", __FILE__, __LINE__, MSG); \
+    fflush(stderr);						\
+    abort();							\
     } while (0);
 
-/**
- * @brief safe malloc wrapper
- */
+/** @brief safe malloc wrapper */
 static void *_io_png_safe_malloc(size_t size)
 {
     void *memptr;
@@ -95,15 +82,11 @@ static void *_io_png_safe_malloc(size_t size)
     return memptr;
 }
 
-/**
- * @brief safe malloc wrapper macro with safe casting
- */
+/** @brief safe malloc wrapper macro with safe casting */
 #define _IO_PNG_SAFE_MALLOC(NB, TYPE)                                   \
     ((TYPE *) _io_png_safe_malloc((size_t) (NB) * sizeof(TYPE)))
 
-/**
- * @brief safe realloc wrapper
- */
+/** @brief safe realloc wrapper */
 static void *_io_png_safe_realloc(void *memptr, size_t size)
 {
     void *newptr;
@@ -113,9 +96,7 @@ static void *_io_png_safe_realloc(void *memptr, size_t size)
     return newptr;
 }
 
-/**
- * @brief safe realloc wrapper macro with safe casting
- */
+/** @brief safe realloc wrapper macro with safe casting */
 #define _IO_PNG_SAFE_REALLOC(PTR, NB, TYPE)                             \
     ((TYPE *) _io_png_safe_realloc((void *) (PTR), (size_t) (NB) * sizeof(TYPE)))
 
