@@ -206,120 +206,140 @@ static float *_io_png_deinter(const float *data, size_t csize, size_t nc)
  *
  * @todo use lookup table instead of division?
  */
-static float *_io_png_byte2flt(const png_byte * png_data, size_t size)
+static float *_io_png_byte2flt(const png_byte * data, size_t size)
 {
     size_t i;
-    float *data;
+    float *flt_data;
+    float max;
 
-    assert(NULL != png_data && 0 != size);
+    assert(NULL != data && 0 != size);
 
-    data = _IO_PNG_SAFE_MALLOC(size, float);
+    flt_data = _IO_PNG_SAFE_MALLOC(size, float);
+    /* png_byte is 8bit data unsigned, [0..255] */
+    max = (float) 255;
     for (i = 0; i < size; i++)
-        /* png_byte is 8bit unsigned, [0..255] */
-        data[i] = (float) (png_data[i]) / 255.;
+        flt_data[i] = (float) (data[i]) / max;
 
-    return data;
+    return flt_data;
 }
 
 /**
  * @brief convert unsigned char array to float
  *
- * @param uchar_data array to convert
- * @param size array size
- * @return converted array
- *
- * @todo use lookup table instead of division?
+ * See _io_png_byte2flt()
  */
-static float *_io_png_uchar2flt(const unsigned char *uchar_data, size_t size)
+static float *_io_png_uchar2flt(const unsigned char *data, size_t size)
 {
     size_t i;
-    float *data;
+    float *flt_data;
+    float max;
 
-    assert(NULL != uchar_data && 0 != size);
+    assert(NULL != data && 0 != size);
 
-    data = _IO_PNG_SAFE_MALLOC(size, float);
+    flt_data = _IO_PNG_SAFE_MALLOC(size, float);
+    max = (float) UCHAR_MAX;
     for (i = 0; i < size; i++)
-        data[i] = (float) (uchar_data[i]) / (float) (UCHAR_MAX);
+        flt_data[i] = (float) (data[i]) / max;
 
-    return data;
+    return flt_data;
 }
 
 /**
  * @brief convert unsigned short array to float
  *
- * @param ushrt_data array to convert
- * @param size array size
- * @return converted array
- *
- * @todo use lookup table instead of division?
+ * See _io_png_byte2flt()
  */
-static float *_io_png_ushrt2flt(const unsigned char *ushrt_data, size_t size)
+static float *_io_png_ushrt2flt(const unsigned char *data, size_t size)
 {
     size_t i;
-    float *data;
+    float *flt_data;
+    float max;
 
-    assert(NULL != ushrt_data && 0 != size);
+    assert(NULL != data && 0 != size);
 
-    data = _IO_PNG_SAFE_MALLOC(size, float);
+    flt_data = _IO_PNG_SAFE_MALLOC(size, float);
+    max = (float) USHRT_MAX;
     for (i = 0; i < size; i++)
-        data[i] = (float) (ushrt_data[i]) / (float) (USHRT_MAX);
+        flt_data[i] = (float) (data[i]) / max;
 
-    return data;
+    return flt_data;
 }
 
 /**
  * @brief convert float array to png_byte
  *
- * @param data array to convert
+ * @param flt_data array to convert
  * @param size array size
  * @return converted array
  *
  * @todo bit twiddling instead of (?:) branching?
  */
-static png_byte *_io_png_flt2byte(const float *data, size_t size)
+static png_byte *_io_png_flt2byte(const float *flt_data, size_t size)
 {
     size_t i;
-    png_byte *png_data;
-    float tmp;
+    png_byte *data;
+    float tmp, max;
 
-    assert(NULL != data && 0 != size);
+    assert(NULL != flt_data && 0 != size);
 
-    png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
+    data = _IO_PNG_SAFE_MALLOC(size, png_byte);
+    /* png_byte is 8bit data unsigned, [0..255] */
+    max = (float) 255;
     for (i = 0; i < size; i++) {
-        /* png_byte is 8bit data unsigned, [0..255] */
-        tmp = data[i] * 255. + .5;
-        png_data[i] = (png_byte) (tmp < 0. ? 0. : (tmp > 255. ? 255. : tmp));
+        tmp = flt_data[i] * max + .5;
+        data[i] = (png_byte) (tmp < 0. ? 0. : (tmp > max ? max : tmp));
     }
 
-    return png_data;
+    return data;
 }
 
 /**
  * @brief convert float array to unsigned char
  *
- * @param data array to convert
- * @param size array size
- * @return converted array
- *
- * @todo bit twiddling instead of (?:) branching?
+ * See _io_png_flt2byte()
  */
-static unsigned char *_io_png_flt2uchar(const float *data, size_t size)
+static unsigned char *_io_png_flt2uchar(const float *flt_data, size_t size)
 {
     size_t i;
-    unsigned char *uchar_data;
-    float tmp;
+    unsigned char *data;
+    float tmp, max;
 
-    assert(NULL != data && 0 != size);
+    assert(NULL != flt_data && 0 != size);
 
-    uchar_data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
+    data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
+    max = (float) UCHAR_MAX;
     for (i = 0; i < size; i++) {
-        tmp = data[i] * UCHAR_MAX + .5;
-        uchar_data[i] =
-            (unsigned char) (tmp < 0. ? 0. : (tmp > 255. ? 255. : tmp));
+        tmp = flt_data[i] * max + .5;
+        data[i] = (unsigned char) (tmp < 0. ? 0. : (tmp > max ? max : tmp));
     }
 
-    return uchar_data;
+    return data;
 }
+
+#ifdef _IGNORE_THIS_CODE
+/**
+ * @brief convert float array to unsigned short
+ *
+ * See _io_png_flt2byte()
+ */
+static unsigned short *_io_png_flt2ushrt(const float *flt_data, size_t size)
+{
+    size_t i;
+    unsigned short *data;
+    float tmp, max;
+
+    assert(NULL != flt_data && 0 != size);
+
+    data = _IO_PNG_SAFE_MALLOC(size, unsigned short);
+    max = (float) USHRT_MAX;
+    for (i = 0; i < size; i++) {
+        tmp = flt_data[i] * max + .5;
+        data[i] = (unsigned short) (tmp < 0. ? 0. : (tmp > max ? max : tmp));
+    }
+
+    return data;
+}
+#endif
 
 /**
  * @brief convert float gray to rgb
