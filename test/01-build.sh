@@ -3,21 +3,14 @@
 # Test the code compilation and execution.
 
 # Test the code correctness by computing the min/max/mean/std of a
-# known image, lena. The expected output is in the data folder
-#
-# red:             min 54.000 max 255.000 mean 180.224 std 49.049
-# green:           min  3.000 max 248.000 mean  99.051 std 52.878
-# blue:            min  8.000 max 225.000 mean 105.410 std 34.058
-# rgb->gray:       min 19.000 max 246.000 mean 116.772 std 49.418
-# gray:            min 19.000 max 246.000 mean 116.769 std 49.419
-# alpha:           min 0.000  max 255.000 mean 127.499 std 74.045
+# known image, lena. The expected output is in the data folder.
 _test_mmms() {
     TEMPFILE=$(tempfile)
     example/mmms data/lena_g.png >> $TEMPFILE
     example/mmms data/lena_ga.png >> $TEMPFILE
     example/mmms data/lena_rgb.png >> $TEMPFILE
     example/mmms data/lena_rgba.png >> $TEMPFILE
-    test "97c63ea85b24792ad112f5dafe56243b  $TEMPFILE" \
+    test "9edef44b78fca2d0f129d3c5b788292b  $TEMPFILE" \
 	= "$(md5sum $TEMPFILE)"
     rm -f $TEMPFILE
 }

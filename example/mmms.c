@@ -40,8 +40,8 @@ static void mm(float *data, size_t size)
         min = pxl < min ? pxl : min;
         max = pxl > max ? pxl : max;
     }
-    printf("   min:\t%0.3f\n", min);
-    printf("   max:\t%0.3f\n", max);
+    printf("   min:\t%0.6f\n", min);
+    printf("   max:\t%0.6f\n", max);
     return;
 }
 
@@ -63,8 +63,8 @@ static void ms(float *data, size_t size)
     std /= (double) size;
     std = sqrt(std);
 
-    printf("   mean:\t%0.3f\n", (float) mean);
-    printf("   std:\t%0.3f\n", (float) std);
+    printf("   mean:\t%0.6f\n", (float) mean);
+    printf("   std:\t%0.6f\n", (float) std);
     return;
 }
 
