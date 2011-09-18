@@ -197,6 +197,19 @@ static float *_io_png_deinter(const float *data, size_t csize, size_t nc)
     return tmp;
 }
 
+/** type-generic any2flt array conversion code */
+#define _IO_PNG_ANY2FLT(MAX) do {                       \
+        size_t i;                                       \
+        float *flt_data;                                \
+        float max;                                      \
+        assert(NULL != data && 0 != size);              \
+        flt_data = _IO_PNG_SAFE_MALLOC(size, float);    \
+        max = (float) (MAX);                            \
+        for (i = 0; i < size; i++)                      \
+            flt_data[i] = (float) (data[i]) / max;      \
+        return flt_data;                                \
+    } while (0)
+
 /**
  * @brief convert png_byte array to float
  *
@@ -208,19 +221,8 @@ static float *_io_png_deinter(const float *data, size_t csize, size_t nc)
  */
 static float *_io_png_byte2flt(const png_byte * data, size_t size)
 {
-    size_t i;
-    float *flt_data;
-    float max;
-
-    assert(NULL != data && 0 != size);
-
-    flt_data = _IO_PNG_SAFE_MALLOC(size, float);
     /* png_byte is 8bit data unsigned, [0..255] */
-    max = (float) 255;
-    for (i = 0; i < size; i++)
-        flt_data[i] = (float) (data[i]) / max;
-
-    return flt_data;
+    _IO_PNG_ANY2FLT(255);
 }
 
 /**
@@ -230,18 +232,7 @@ static float *_io_png_byte2flt(const png_byte * data, size_t size)
  */
 static float *_io_png_uchar2flt(const unsigned char *data, size_t size)
 {
-    size_t i;
-    float *flt_data;
-    float max;
-
-    assert(NULL != data && 0 != size);
-
-    flt_data = _IO_PNG_SAFE_MALLOC(size, float);
-    max = (float) UCHAR_MAX;
-    for (i = 0; i < size; i++)
-        flt_data[i] = (float) (data[i]) / max;
-
-    return flt_data;
+    _IO_PNG_ANY2FLT(UCHAR_MAX);
 }
 
 /**
@@ -251,19 +242,24 @@ static float *_io_png_uchar2flt(const unsigned char *data, size_t size)
  */
 static float *_io_png_ushrt2flt(const unsigned char *data, size_t size)
 {
-    size_t i;
-    float *flt_data;
-    float max;
-
-    assert(NULL != data && 0 != size);
-
-    flt_data = _IO_PNG_SAFE_MALLOC(size, float);
-    max = (float) USHRT_MAX;
-    for (i = 0; i < size; i++)
-        flt_data[i] = (float) (data[i]) / max;
-
-    return flt_data;
+    _IO_PNG_ANY2FLT(USHRT_MAX);
 }
+
+/** type-generic flt2any array conversion code */
+#define _IO_PNG_FLT2ANY(TYPE, MAX) do {                         \
+        size_t i;                                               \
+        TYPE *data;                                             \
+        float tmp, max;                                         \
+        assert(NULL != flt_data && 0 != size);                  \
+        data = _IO_PNG_SAFE_MALLOC(size, TYPE);                 \
+        max = (float) (MAX);                                    \
+        for (i = 0; i < size; i++) {                            \
+            tmp = flt_data[i] * max + .5;                       \
+            data[i] = (TYPE) (tmp < 0. ? 0.                     \
+                                  : (tmp > max ? max : tmp));   \
+        }                                                       \
+        return data;                                            \
+    } while (0)
 
 /**
  * @brief convert float array to png_byte
@@ -276,21 +272,8 @@ static float *_io_png_ushrt2flt(const unsigned char *data, size_t size)
  */
 static png_byte *_io_png_flt2byte(const float *flt_data, size_t size)
 {
-    size_t i;
-    png_byte *data;
-    float tmp, max;
-
-    assert(NULL != flt_data && 0 != size);
-
-    data = _IO_PNG_SAFE_MALLOC(size, png_byte);
     /* png_byte is 8bit data unsigned, [0..255] */
-    max = (float) 255;
-    for (i = 0; i < size; i++) {
-        tmp = flt_data[i] * max + .5;
-        data[i] = (png_byte) (tmp < 0. ? 0. : (tmp > max ? max : tmp));
-    }
-
-    return data;
+    _IO_PNG_FLT2ANY(png_byte, 255);
 }
 
 /**
@@ -300,20 +283,7 @@ static png_byte *_io_png_flt2byte(const float *flt_data, size_t size)
  */
 static unsigned char *_io_png_flt2uchar(const float *flt_data, size_t size)
 {
-    size_t i;
-    unsigned char *data;
-    float tmp, max;
-
-    assert(NULL != flt_data && 0 != size);
-
-    data = _IO_PNG_SAFE_MALLOC(size, unsigned char);
-    max = (float) UCHAR_MAX;
-    for (i = 0; i < size; i++) {
-        tmp = flt_data[i] * max + .5;
-        data[i] = (unsigned char) (tmp < 0. ? 0. : (tmp > max ? max : tmp));
-    }
-
-    return data;
+    _IO_PNG_FLT2ANY(unsigned char, UCHAR_MAX);
 }
 
 /**
@@ -323,20 +293,7 @@ static unsigned char *_io_png_flt2uchar(const float *flt_data, size_t size)
  */
 static unsigned short *_io_png_flt2ushrt(const float *flt_data, size_t size)
 {
-    size_t i;
-    unsigned short *data;
-    float tmp, max;
-
-    assert(NULL != flt_data && 0 != size);
-
-    data = _IO_PNG_SAFE_MALLOC(size, unsigned short);
-    max = (float) USHRT_MAX;
-    for (i = 0; i < size; i++) {
-        tmp = flt_data[i] * max + .5;
-        data[i] = (unsigned short) (tmp < 0. ? 0. : (tmp > max ? max : tmp));
-    }
-
-    return data;
+    _IO_PNG_FLT2ANY(unsigned short, USHRT_MAX);
 }
 
 /**
