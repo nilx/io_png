@@ -349,14 +349,15 @@ static float *_io_png_rgb2gray(float *data, size_t size)
 /**
  * @brief internal function used to read a PNG file into an array
  *
- * @todo don't loose 16bit info
- *
  * @param fname PNG file name, "-" means stdin
  * @param nxp, nyp, ncp pointers to variables to be filled
  *        with the number of columns, lines and channels of the image
  * @option post-processing option string, can be "rgb" or "gray",
  *         "" to do nothing
  * @return pointer to an array of float pixels, abort() on error
+ *
+ * @todo don't loose 16bit info
+ * @todo use enums?
  */
 static float *_io_png_read(const char *fname,
                            size_t * nxp, size_t * nyp, size_t * ncp,
@@ -434,9 +435,7 @@ static float *_io_png_read(const char *fname,
     row_pointers = png_get_rows(png_ptr, info_ptr);
 
     /* dump the rows in a continuous array */
-    /* todo: first check if the data is continuous via
-     * row_pointers */
-    /* todo: check type width */
+    /* todo: first check if the data is continuous via row_pointers */
     png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
     for (i = 0; i < ny; i++)
         memcpy((void *) (png_data + i * nx * nc),
@@ -636,13 +635,12 @@ unsigned short *io_png_read_ushrt(const char *fname,
  * truecolor. Depending on the number of channels, the color model is
  * gray, gray+alpha, rgb, rgb+alpha.
  *
- * @todo handle 16bit
- * @todo in-place deinterlace
- *
  * @param fname PNG file name, "-" means stdout
  * @param data non interlaced (RRRGGGBBBAAA) float image array
  * @param nx, ny, nc number of columns, lines and channels
  * @return void, abort() on error
+ *
+ * @todo handle 16bit
  */
 static void _io_png_write(const char *fname, const float *data,
                           size_t nx, size_t ny, size_t nc)
