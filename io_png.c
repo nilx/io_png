@@ -316,7 +316,6 @@ static unsigned char *_io_png_flt2uchar(const float *flt_data, size_t size)
     return data;
 }
 
-#ifdef _IGNORE_THIS_CODE
 /**
  * @brief convert float array to unsigned short
  *
@@ -339,7 +338,6 @@ static unsigned short *_io_png_flt2ushrt(const float *flt_data, size_t size)
 
     return data;
 }
-#endif
 
 /**
  * @brief convert float gray to rgb
@@ -544,20 +542,20 @@ static float *_io_png_read(const char *fname,
  * @param fname PNG file name
  * @param nxp, nyp, ncp pointers to variables to be filled with the number of
  *        columns, lines and channels of the image
- * @return pointer to an array of float pixels, abort() on error
+ * @return pointer to an array of pixels, abort() on error
  */
 float *io_png_read_flt(const char *fname,
                        size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    float *data;
+    float *flt_data;
     size_t nx, ny, nc;
 
-    data = _io_png_read(fname, &nx, &ny, &nc, "");
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "");
 
     *nxp = nx;
     *nyp = ny;
     *ncp = nc;
-    return data;
+    return flt_data;
 }
 
 /**
@@ -567,14 +565,14 @@ float *io_png_read_flt(const char *fname,
  */
 float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
 {
-    float *data;
+    float *flt_data;
     size_t nx, ny, nc;
 
-    data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
 
     *nxp = nx;
     *nyp = ny;
-    return data;
+    return flt_data;
 }
 
 /**
@@ -584,14 +582,14 @@ float *io_png_read_flt_rgb(const char *fname, size_t * nxp, size_t * nyp)
  */
 float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
 {
-    float *data;
+    float *flt_data;
     size_t nx, ny, nc;
 
-    data = _io_png_read(fname, &nx, &ny, &nc, "gray");
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "gray");
 
     *nxp = nx;
     *nyp = ny;
-    return data;
+    return flt_data;
 }
 
 /**
@@ -604,24 +602,23 @@ float *io_png_read_flt_gray(const char *fname, size_t * nxp, size_t * nyp)
  * @param fname PNG file name
  * @param nxp, nyp, ncp pointers to variables to be filled with the number of
  *        columns, lines and channels of the image
- * @return pointer to an allocated unsigned char array of pixels,
- *         or NULL if an error happens
+ * @return pointer to an array of pixels, abort() on error
  */
 unsigned char *io_png_read_uchar(const char *fname,
                                  size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    float *data;
-    unsigned char *uchar_data;
+    float *flt_data;
+    unsigned char *data;
     size_t nx, ny, nc;
 
-    data = _io_png_read(fname, &nx, &ny, &nc, "");
-    uchar_data = _io_png_flt2uchar(data, nx * ny * nc);
-    free(data);
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "");
+    data = _io_png_flt2uchar(flt_data, nx * ny * nc);
+    free(flt_data);
 
     *nxp = nx;
     *nyp = ny;
     *ncp = nc;
-    return uchar_data;
+    return data;
 }
 
 /**
@@ -632,17 +629,17 @@ unsigned char *io_png_read_uchar(const char *fname,
 unsigned char *io_png_read_uchar_rgb(const char *fname, size_t * nxp,
                                      size_t * nyp)
 {
-    float *data;
-    unsigned char *uchar_data;
+    float *flt_data;
+    unsigned char *data;
     size_t nx, ny, nc;
 
-    data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
-    uchar_data = _io_png_flt2uchar(data, nx * ny * nc);
-    free(data);
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
+    data = _io_png_flt2uchar(flt_data, nx * ny * nc);
+    free(flt_data);
 
     *nxp = nx;
     *nyp = ny;
-    return uchar_data;
+    return data;
 }
 
 /**
@@ -653,17 +650,88 @@ unsigned char *io_png_read_uchar_rgb(const char *fname, size_t * nxp,
 unsigned char *io_png_read_uchar_gray(const char *fname,
                                       size_t * nxp, size_t * nyp)
 {
-    float *data;
-    unsigned char *uchar_data;
+    float *flt_data;
+    unsigned char *data;
     size_t nx, ny, nc;
 
-    data = _io_png_read(fname, &nx, &ny, &nc, "gray");
-    uchar_data = _io_png_flt2uchar(data, nx * ny * nc);
-    free(data);
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "gray");
+    data = _io_png_flt2uchar(flt_data, nx * ny * nc);
+    free(flt_data);
 
     *nxp = nx;
     *nyp = ny;
-    return uchar_data;
+    return data;
+}
+
+/**
+ * @brief read a PNG file into an unsigned short array
+ *
+ * The array contains the de-interlaced channels, with values in [0,USHRT_MAX].
+ *
+ * @todo don't downscale 16bit images.
+ *
+ * @param fname PNG file name
+ * @param nxp, nyp, ncp pointers to variables to be filled with the number of
+ *        columns, lines and channels of the image
+ * @return pointer to an array of pixels, abort() on error
+ */
+unsigned short *io_png_read_ushrt(const char *fname,
+                                  size_t * nxp, size_t * nyp, size_t * ncp)
+{
+    float *flt_data;
+    unsigned short *data;
+    size_t nx, ny, nc;
+
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "");
+    data = _io_png_flt2ushrt(flt_data, nx * ny * nc);
+    free(flt_data);
+
+    *nxp = nx;
+    *nyp = ny;
+    *ncp = nc;
+    return data;
+}
+
+/**
+ * @brief read a PNG file into an unsigned short array, converted to RGB
+ *
+ * See io_png_read_ushrt() for details.
+ */
+unsigned short *io_png_read_ushrt_rgb(const char *fname, size_t * nxp,
+                                      size_t * nyp)
+{
+    float *flt_data;
+    unsigned short *data;
+    size_t nx, ny, nc;
+
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "rgb");
+    data = _io_png_flt2ushrt(flt_data, nx * ny * nc);
+    free(flt_data);
+
+    *nxp = nx;
+    *nyp = ny;
+    return data;
+}
+
+/**
+ * @brief read a PNG file into an unsigned short array, converted to gray
+ *
+ * See io_png_read_ushrt() for details.
+ */
+unsigned short *io_png_read_ushrt_gray(const char *fname,
+                                       size_t * nxp, size_t * nyp)
+{
+    float *flt_data;
+    unsigned short *data;
+    size_t nx, ny, nc;
+
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, "gray");
+    data = _io_png_flt2ushrt(flt_data, nx * ny * nc);
+    free(flt_data);
+
+    *nxp = nx;
+    *nyp = ny;
+    return data;
 }
 
 /*
