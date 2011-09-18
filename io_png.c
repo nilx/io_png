@@ -126,72 +126,72 @@ static void _io_png_err_hdl(png_structp png_ptr, png_const_charp msg)
     longjmp(err_ptr->jmpbuf, 1);
 }
 
+/*
+ * TYPE AND IMAGE FORMAT CONVERSION
+ */
+
 /**
- * @brief interlace a png_byte array
+ * @brief interlace a float array
  *
- * @param png_data array to interlace
+ * @param data array to interlace
  * @param csize array size per channel
  * @param nc number of channels to interlace
  * @return new array
- *
- * @todo real in-place method
  */
-static png_byte *_io_png_interlace(png_byte * png_data, size_t csize,
-                                   size_t nc)
+static float *_io_png_inter(const float *data, size_t csize, size_t nc)
 {
     size_t i, size;
-    png_byte *tmp;
+    float *tmp;
 
-    if (NULL == png_data || 0 == csize || 0 == nc)
+    if (NULL == data || 0 == csize || 0 == nc)
         _IO_PNG_ABORT("bad parameters");
-    if (1 == nc || 1 == csize)
-        /* nothing to do */
-        return png_data;
+    if (1 == nc || 1 == csize) {
+        /* duplicate */
+        tmp = _IO_PNG_SAFE_MALLOC(csize * nc, float);
+        memcpy(tmp, data, csize * nc * sizeof(float));
+        return tmp;
+    }
 
     size = nc * csize;
-    tmp = _IO_PNG_SAFE_MALLOC(size, png_byte);
+    tmp = _IO_PNG_SAFE_MALLOC(size, float);
     for (i = 0; i < size; i++)
         /*
          * set the i-th element of tmp, interlaced
          * its channel is i % nc
          * its position in this channel is i / nc
          */
-        tmp[i] = png_data[i % nc * csize + i / nc];
-
-    free(png_data);
+        tmp[i] = data[i % nc * csize + i / nc];
 
     return tmp;
 }
 
 /**
- * @brief deinterlace a png_byte array
+ * @brief deinterlace a float array
  *
- * @param png_data array to deinterlace
+ * @param data array to deinterlace
  * @param csize array size per channel
  * @param nc number of channels to deinterlace
  * @return new array
- *
- * @todo real in-place method
  */
-static png_byte *_io_png_deinterlace(png_byte * png_data, size_t csize,
-                                     size_t nc)
+static float *_io_png_deinter(const float *data, size_t csize, size_t nc)
 {
     size_t i, size;
-    png_byte *tmp;
+    float *tmp;
 
-    if (NULL == png_data || 0 == csize || 0 == nc)
+    if (NULL == data || 0 == csize || 0 == nc)
         _IO_PNG_ABORT("bad parameters");
-    if (1 == nc || 1 == csize)
-        /* nothing to do */
-        return png_data;
+    if (1 == nc || 1 == csize) {
+        /* duplicate */
+        tmp = _IO_PNG_SAFE_MALLOC(csize * nc, float);
+        memcpy(tmp, data, csize * nc * sizeof(float));
+        return tmp;
+    }
 
     size = nc * csize;
-    tmp = _IO_PNG_SAFE_MALLOC(size, png_byte);
+    tmp = _IO_PNG_SAFE_MALLOC(size, float);
     for (i = 0; i < size; i++)
-        /* see _io_png_interlace() */
-        tmp[i % nc * csize + i / nc] = png_data[i];
-
-    free(png_data);
+        /* see _io_png_inter() */
+        tmp[i % nc * csize + i / nc] = data[i];
 
     return tmp;
 }
@@ -384,7 +384,7 @@ static float *_io_png_read(const char *fname,
     png_infop info_ptr;
     png_bytepp row_pointers;
     png_byte *png_data;
-    float *data;
+    float *data, *tmp;
     int png_transform;
     /* volatile: because of setjmp/longjmp */
     FILE *volatile fp = NULL;
@@ -460,17 +460,17 @@ static float *_io_png_read(const char *fname,
         memcpy((void *) (png_data + i * nx * nc),
                (void *) row_pointers[i], nx * nc * sizeof(png_byte));
 
-    /* deinterlace RGBA RGBA RGBA to RRR GGG BBB AAA */
-    png_data = _io_png_deinterlace(png_data, nx * ny, nc);
-
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
     if (stdin != fp)
         (void) fclose(fp);
 
     /* convert to float */
     /* todo: at the row step */
-    data = _io_png_byte2flt(png_data, nx * ny * nc);
+    tmp = _io_png_byte2flt(png_data, nx * ny * nc);
     free(png_data);
+    /* deinterlace RGBA RGBA RGBA to RRR GGG BBB AAA */
+    data = _io_png_deinter(tmp, nx * ny, nc);
+    free(tmp);
 
     *nxp = nx;
     *nyp = ny;
@@ -684,6 +684,7 @@ static void _io_png_write(const char *fname, const float *data,
     png_bytep *row_pointers;
     png_byte *png_data;
     png_byte bit_depth;
+    float *tmp;
     /* volatile: because of setjmp/longjmp */
     FILE *volatile fp;
     int color_type, interlace, compression, filter;
@@ -691,11 +692,11 @@ static void _io_png_write(const char *fname, const float *data,
     /* error structure */
     _io_png_err_t err;
 
-    /* convert to png_byte */
-    png_data = _io_png_flt2byte(data, nx * ny * nc);
-
     /* interlace RRR GGG BBB AAA to RGBA RGBA RGBA */
-    png_data = _io_png_interlace(png_data, nx * ny, nc);
+    tmp = _io_png_inter(data, nx * ny, nc);
+    /* convert to png_byte */
+    png_data = _io_png_flt2byte(tmp, nx * ny * nc);
+    free(tmp);
 
     /* open the PNG output file */
     if (0 == strcmp(fname, "-"))
