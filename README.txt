@@ -2,13 +2,10 @@
 
 * overview
 * license
+* download
 * requirements
-* usage
- * read
- * write
- * example
 * compilation
- * local libraries
+* usage
 * todo
 * copyright
 
@@ -45,6 +42,33 @@ be found at http://www.zlib.net/.
 On Linux, these library can be installed by the package manager. On
 Mac OSX, you can use Fink: http://www.finkproject.org/. On Windows,
 you can use GnuWin32: http://gnuwin32.sourceforge.net/.
+
+# COMPILATION
+
+Compile io_png.c with the same compiler used for the other source files
+of your project. C and C++ compilers are possible. io_png has been
+tested with gcc, icc, suncc, pathcc, tcc and nwcc.
+
+You can compile the example codes located in the example folder using
+the provided makefile, with the `make` command.
+
+## LOCAL LIBRARIES
+
+If libpng is not installed on your system, of if you prefer a local
+static build, a mechanism is available to automatically download,
+build and include libpng in your program:
+
+1. run `make libpng`;
+   this uses the makefiles from the `libs` folder to download and
+   compile libpng and zlib, and builds the libraries into `libs/build`;
+2. use the "-DIO_PNG_LOCAL_LIBPNG -I./libs/build/include" options to compile
+   io_png.c;
+3. add ./libs/build/lib/libpng.a ./libs/build/lib/libz.a to the list of
+  files being linked into your program
+
+This is automatically handled in the provided makefile for the example
+code example/readpng.c; simply use the `make LOCAL_LIBS=1` command
+instead of `make`.
 
 # USAGE
 
@@ -87,10 +111,10 @@ always receive the same kind of image, whatever the file contains:
 * io_png_read_pp_uchar(fname, &nx, &ny, &nc, option)
 * io_png_read_pp_uchar(fname, &nx, &ny, &nc, option)
 
-Thew option parameter is a string:
-- "" do nothing
-- "rgb" strip alpha and convert gray to rgb
-- "gray" strip alpha and convert rgb to gray
+Thew option parameter is:
+- IO_PNG_OPT_NONE do nothing
+- IO_PNG_OPT_RGB  strip alpha and convert gray to rgb
+- IO_PNG_OPT_GRAY strip alpha and convert rgb to gray
 
 For all these fonctions, the data is read into float, processed as
 float, then requantized to the desired precision. 16bit PNG files are
@@ -117,33 +141,6 @@ to use:
 ## EXAMPLE
 
 see example/readpng.c and example/axpb.c
-
-# COMPILATION
-
-Compile io_png.c with the same compiler used for the other source files
-of your project. C and C++ compilers are possible. io_png has been
-tested with gcc, icc, suncc, pathcc, tcc and nwcc.
-
-You can compile the example codes located in the example folder using
-the provided makefile, with the `make` command.
-
-## LOCAL LIBRARIES
-
-If libpng is not installed on your system, of if you prefer a local
-static build, a mechanism is available to automatically download,
-build and include libpng in your program:
-
-1. run `make libpng`;
-   this uses the makefiles from the `libs` folder to download and
-   compile libpng and zlib, and builds the libraries into `libs/build`;
-2. use the "-DIO_PNG_LOCAL_LIBPNG -I./libs/build/include" options to compile
-   io_png.c;
-3. add ./libs/build/lib/libpng.a ./libs/build/lib/libz.a to the list of
-  files being linked into your program
-
-This is automatically handled in the provided makefile for the example
-code example/readpng.c; simply use the `make LOCAL_LIBS=1` command
-instead of `make`.
 
 # TODO
 

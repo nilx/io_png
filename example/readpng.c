@@ -101,11 +101,11 @@ int main(int argc, char **argv)
      * to handle colorspace conversion
      */
     /* read as RGB, and save */
-    img = io_png_read_pp_flt(argv[1], &nx, &ny, NULL, "rgb");
+    img = io_png_read_pp_flt(argv[1], &nx, &ny, NULL, IO_PNG_OPT_RGB);
     io_png_write_flt(argv[2], img, nx, ny, 3);
     free(img);
     /* read as gray, and save */
-    img = io_png_read_pp_flt(argv[1], &nx, &ny, NULL, "gray");
+    img = io_png_read_pp_flt(argv[1], &nx, &ny, NULL, IO_PNG_OPT_GRAY);
     io_png_write_flt(argv[2], img, nx, ny, 1);
     free(img);
 

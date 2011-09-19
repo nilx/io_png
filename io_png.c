@@ -352,8 +352,8 @@ static float *_io_png_rgb2gray(float *data, size_t size)
  * @param fname PNG file name, "-" means stdin
  * @param nxp, nyp, ncp pointers to variables to be filled
  *        with the number of columns, lines and channels of the image
- * @option post-processing option string, can be "rgb" or "gray",
- *         "" to do nothing
+ * @param opt post-processing option, can be IO_PNG_OPT_RGB or IO_PNG_OPT_GRAY,
+ *         IO_PNG_OPT_NONE to do nothing
  * @return pointer to an array of float pixels, abort() on error
  *
  * @todo don't loose 16bit info
@@ -361,7 +361,7 @@ static float *_io_png_rgb2gray(float *data, size_t size)
  */
 static float *_io_png_read(const char *fname,
                            size_t * nxp, size_t * nyp, size_t * ncp,
-                           const char *option)
+                           io_png_opt_t opt)
 {
     png_byte png_sig[PNG_SIG_LEN];
     png_structp png_ptr;
@@ -378,8 +378,7 @@ static float *_io_png_read(const char *fname,
     /* local error structure */
     _io_png_err_t err;
 
-    assert(NULL != fname && NULL != option
-           && NULL != nxp && NULL != nyp && NULL != ncp);
+    assert(NULL != fname && NULL != nxp && NULL != nyp && NULL != ncp);
 
     /* open the PNG input file */
     if (0 == strcmp(fname, "-"))
@@ -454,21 +453,36 @@ static float *_io_png_read(const char *fname,
     free(tmp);
 
     /* post-processing */
-    if ((0 == strcmp("rgb", option)
-         || 0 == strcmp("gray", option))
-        && (4 == nc || 2 == nc)) {
-        /* strip alpha channel ... */
-        data = _IO_PNG_SAFE_REALLOC(data, nx * ny * (nc - 1), float);
-        nc = (nc - 1);
-    }
-    if (0 == strcmp("rgb", option) && 1 == nc) {
-        /* gray->rgb */
-        data = _io_png_gray2rgb(data, nx * ny);
-        nc = 3;
-    }
-    if (0 == strcmp("gray", option) && 3 == nc) {
-        data = _io_png_rgb2gray(data, nx * ny * nc);
-        nc = 1;
+    switch (opt) {
+    case IO_PNG_OPT_RGB:
+        if (4 == nc || 2 == nc) {
+            /* strip alpha channel ... */
+            data = _IO_PNG_SAFE_REALLOC(data, nx * ny * (nc - 1), float);
+            nc = (nc - 1);
+        }
+        if (1 == nc) {
+            /* gray->rgb */
+            data = _io_png_gray2rgb(data, nx * ny);
+            nc = 3;
+        }
+        break;
+    case IO_PNG_OPT_GRAY:
+        if (4 == nc || 2 == nc) {
+            /* strip alpha channel ... */
+            data = _IO_PNG_SAFE_REALLOC(data, nx * ny * (nc - 1), float);
+            nc = (nc - 1);
+        }
+        if (3 == nc) {
+            /* rgb->gray */
+            data = _io_png_rgb2gray(data, nx * ny * nc);
+            nc = 1;
+        }
+        break;
+    case IO_PNG_OPT_NONE:
+        /* do nothing */
+        break;
+    default:
+        _IO_PNG_ABORT("unsupported preprocessing option");
     }
 
     *nxp = nx;
@@ -490,20 +504,20 @@ static float *_io_png_read(const char *fname,
  * @param fname PNG file name
  * @param nxp, nyp, ncp pointers to variables to be filled with the number of
  *        columns, lines and channels of the image, if not NULL
- * @option post-processing option string
+ * @param opt post-processing opt
  * @return pointer to an array of pixels, abort() on error
  */
 float *io_png_read_pp_flt(const char *fname,
                           size_t * nxp, size_t * nyp, size_t * ncp,
-                          const char *option)
+                          io_png_opt_t opt)
 {
     float *flt_data;
     size_t nx, ny, nc;
 
-    if (NULL == fname || NULL == option)
+    if (NULL == fname)
         _IO_PNG_ABORT("bad parameters");
 
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, option);
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, opt);
 
     if (NULL != nxp)
         *nxp = nx;
@@ -528,7 +542,7 @@ float *io_png_read_pp_flt(const char *fname,
 float *io_png_read_flt(const char *fname,
                        size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    return io_png_read_pp_flt(fname, nxp, nyp, ncp, "");
+    return io_png_read_pp_flt(fname, nxp, nyp, ncp, IO_PNG_OPT_NONE);
 }
 
 /**
@@ -540,16 +554,16 @@ float *io_png_read_flt(const char *fname,
  */
 unsigned char *io_png_read_pp_uchar(const char *fname,
                                     size_t * nxp, size_t * nyp, size_t * ncp,
-                                    const char *option)
+                                    io_png_opt_t opt)
 {
     float *flt_data;
     unsigned char *data;
     size_t nx, ny, nc;
 
-    if (NULL == fname || NULL == option)
+    if (NULL == fname)
         _IO_PNG_ABORT("bad parameters");
 
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, option);
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, opt);
     data = _io_png_flt2uchar(flt_data, nx * ny * nc);
     free(flt_data);
 
@@ -576,7 +590,7 @@ unsigned char *io_png_read_pp_uchar(const char *fname,
 unsigned char *io_png_read_uchar(const char *fname,
                                  size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    return io_png_read_pp_uchar(fname, nxp, nyp, ncp, "");
+    return io_png_read_pp_uchar(fname, nxp, nyp, ncp, IO_PNG_OPT_NONE);
 }
 
 /**
@@ -588,13 +602,16 @@ unsigned char *io_png_read_uchar(const char *fname,
  */
 unsigned short *io_png_read_pp_ushrt(const char *fname,
                                      size_t * nxp, size_t * nyp, size_t * ncp,
-                                     const char *option)
+                                     io_png_opt_t opt)
 {
     float *flt_data;
     unsigned short *data;
     size_t nx, ny, nc;
 
-    flt_data = _io_png_read(fname, &nx, &ny, &nc, option);
+    if (NULL == fname)
+        _IO_PNG_ABORT("bad parameters");
+
+    flt_data = _io_png_read(fname, &nx, &ny, &nc, opt);
     data = _io_png_flt2ushrt(flt_data, nx * ny * nc);
     free(flt_data);
 
@@ -621,7 +638,7 @@ unsigned short *io_png_read_pp_ushrt(const char *fname,
 unsigned short *io_png_read_ushrt(const char *fname,
                                   size_t * nxp, size_t * nyp, size_t * ncp)
 {
-    return io_png_read_pp_ushrt(fname, nxp, nyp, ncp, "");
+    return io_png_read_pp_ushrt(fname, nxp, nyp, ncp, IO_PNG_OPT_NONE);
 }
 
 /*
