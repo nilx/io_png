@@ -367,6 +367,7 @@ static float *_io_png_read(const char *fname,
     png_structp png_ptr;
     png_infop info_ptr;
     png_bytepp row_pointers;
+    size_t rowbytes;
     png_byte *png_data;
     float *data, *tmp;
     int png_transform;
@@ -415,12 +416,14 @@ static float *_io_png_read(const char *fname,
     /*
      * set the read filter transforms, to get 8bit RGB whatever the
      * original file may contain:
-     * PNG_TRANSFORM_STRIP_16      strip 16-bit samples to 8 bits
      * PNG_TRANSFORM_PACKING       expand 1, 2 and 4-bit
      *                             samples to bytes
+     * PNG_TRANSFORM_STRIP_16      chop 16-bit samples to
+     *                             8-bit
      */
+    /* todo: handle 16bit? */
     png_transform = (PNG_TRANSFORM_IDENTITY
-                     | PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING);
+                     | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_STRIP_16);
 
     /*
      * read in the entire image at once
@@ -432,13 +435,14 @@ static float *_io_png_read(const char *fname,
     nc = (size_t) png_get_channels(png_ptr, info_ptr);
     size = nx * ny * nc;
     row_pointers = png_get_rows(png_ptr, info_ptr);
+    rowbytes = (size_t) png_get_rowbytes(png_ptr, info_ptr);
 
     /* dump the rows in a continuous array */
     /* todo: first check if the data is continuous via row_pointers */
     png_data = _IO_PNG_SAFE_MALLOC(size, png_byte);
     for (i = 0; i < ny; i++)
-        memcpy((void *) (png_data + i * nx * nc),
-               (void *) row_pointers[i], nx * nc * sizeof(png_byte));
+        memcpy((void *) (png_data + i * rowbytes),
+               (void *) row_pointers[i], rowbytes * sizeof(png_byte));
 
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
     if (stdin != fp)
