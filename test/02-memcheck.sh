@@ -17,7 +17,9 @@ _log _test_memcheck example/mmms data/lena_g.png
 _log _test_memcheck example/mmms data/lena_ga.png
 _log _test_memcheck example/mmms data/lena_rgb.png
 _log _test_memcheck example/mmms data/lena_rgba.png
-
+_log _test_memcheck example/readpng data/lena_g.png
+_log _test_memcheck example/readpng data/lena_rgba.png
+_log rm -f float*.png from*.png
 _log make distclean
 
 _log_clean

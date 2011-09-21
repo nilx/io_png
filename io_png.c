@@ -227,7 +227,7 @@ static float *_io_png_uchar2flt(const unsigned char *data, size_t size)
  *
  * See _io_png_byte2flt()
  */
-static float *_io_png_ushrt2flt(const unsigned char *data, size_t size)
+static float *_io_png_ushrt2flt(const unsigned short *data, size_t size)
 {
     _IO_PNG_ANY2FLT(USHRT_MAX);
 }
@@ -817,7 +817,7 @@ void io_png_write_uchar(const char *fname, const unsigned char *data,
  *
  * @todo save in 16bits
  */
-void io_png_write_ushrt(const char *fname, const unsigned char *data,
+void io_png_write_ushrt(const char *fname, const unsigned short *data,
                         size_t nx, size_t ny, size_t nc)
 {
     float *flt_data;
