@@ -13,9 +13,11 @@ OBJ	= $(SRC:.c=.o)
 BIN	= $(filter example/%, $(SRC:.c=))
 
 # standard C compiler optimization options
-COPT	= -O3 -DNDEBUG
+COPT	= -O3
 # complete C compiler options
 CFLAGS	= -ansi -pedantic -Wall -Wextra -Werror -pipe $(COPT)
+# preprocessot options
+CPPFLAGS	= -I. -DNDEBUG
 # linker options
 LDFLAGS	= -lpng -lm
 # library build dependencies (none)
@@ -29,9 +31,10 @@ INCDIR = ./libs/build/include
 # libpng is required
 LIBDEPS += libpng
 # compile options to use the local libpng header
-CFLAGS 	+= -I$(INCDIR) -DIO_PNG_LOCAL_LIBPNG
+CPPFLAGS 	+= -I$(INCDIR) -DIO_PNG_LOCAL_LIBPNG
 # link options to use the local libraries
-LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
+LDFLAGS = -lm
+LDLIBS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a
 endif
 
 # default target: the example programs
@@ -44,11 +47,12 @@ libpng	:
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c $(LIBDEPS)
-	$(CC) $< -c $(CFLAGS) -I. -o $@
+	$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
 
 # final link of an example program
-example/%	: example/%.o io_png.o $(LIBDEPS)
-	$(CC) $< io_png.o $(LDFLAGS) -o $@
+example/%	: $(LIBDEPS)
+example/%	: example/%.o io_png.o
+	$(CC) $^ $(LDLIBS) $(LDFLAGS) -o $@
 
 # cleanup
 .PHONY	: clean distclean scrub
