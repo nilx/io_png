@@ -12,10 +12,10 @@ OBJ	= $(SRC:.c=.o)
 # binary executable programs
 BIN	= $(filter example/%, $(SRC:.c=))
 
-# standard C compiler optimization options
+# C compiler optimization options
 COPT	= -O3
 # complete C compiler options
-CFLAGS	= -ansi -pedantic -Wall -Wextra -Werror -pipe $(COPT)
+CFLAGS	= $(COPT)
 # preprocessot options
 CPPFLAGS	= -I. -DNDEBUG
 # linker options
@@ -25,16 +25,7 @@ LIBDEPS =
 
 # use local embedded libraries
 ifdef LOCAL_LIBS
-# library location
-LIBDIR = ./libs/build/lib
-INCDIR = ./libs/build/include
-# libpng is required
-LIBDEPS += libpng
-# compile options to use the local libpng header
-CPPFLAGS 	+= -I$(INCDIR) -DIO_PNG_LOCAL_LIBPNG
-# link options to use the local libraries
-LDFLAGS = -lm
-LDLIBS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a
+-include	makefile.libs
 endif
 
 # default target: the example programs

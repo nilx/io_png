@@ -40,12 +40,7 @@ for CC in cc c++ c99 gcc g++ tcc nwcc clang icc pathcc suncc; do
     which $CC || continue
     echo "* $CC compiler"
     _log make distclean
-    case $CC in
-	"gcc"|"g++")
-	    _log make CC=$CC ;;
-	*)
-	    _log make CC=$CC CFLAGS= ;;
-    esac
+    _log make CC=$CC
     _log _test_run
 done
 
