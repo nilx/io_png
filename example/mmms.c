@@ -88,11 +88,11 @@ static float *io_png_read_mode(const char *fname,
         break;
     case FLT_GRAY:
         *nc = 1;
-        img = io_png_read_pp_flt(fname, nx, ny, NULL, IO_PNG_OPT_GRAY);
+        img = io_png_read_flt_opt(fname, nx, ny, NULL, IO_PNG_OPT_GRAY);
         break;
     case FLT_RGB:
         *nc = 3;
-        img = io_png_read_pp_flt(fname, nx, ny, NULL, IO_PNG_OPT_RGB);
+        img = io_png_read_flt_opt(fname, nx, ny, NULL, IO_PNG_OPT_RGB);
         break;
     case UCHAR:
         img_uchar = io_png_read_uchar(fname, nx, ny, nc);
@@ -100,11 +100,12 @@ static float *io_png_read_mode(const char *fname,
     case UCHAR_GRAY:
         *nc = 1;
         img_uchar =
-            io_png_read_pp_uchar(fname, nx, ny, NULL, IO_PNG_OPT_GRAY);
+            io_png_read_uchar_opt(fname, nx, ny, NULL, IO_PNG_OPT_GRAY);
         break;
     case UCHAR_RGB:
         *nc = 3;
-        img_uchar = io_png_read_pp_uchar(fname, nx, ny, NULL, IO_PNG_OPT_RGB);
+        img_uchar =
+            io_png_read_uchar_opt(fname, nx, ny, NULL, IO_PNG_OPT_RGB);
         break;
     default:
         abort();

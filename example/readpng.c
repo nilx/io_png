@@ -53,18 +53,18 @@ int main(int argc, char **argv)
      * green, and so on. But the nimber of channels, from 1 to 4, will
      * depend on file you read. So you may want to force the image to
      * be read as grayscale image via preprocessing with
-     * io_png_read_pp_flt().
+     * io_png_read_flt_opt().
      */
     /* reread the image in float with grayscale conversion */
     free(img);
-    img = io_png_read_pp_flt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_GRAY);
+    img = io_png_read_flt_opt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_GRAY);
 
     /* we now have a single channel image */
     assert(nc == 1);
 
     /* nc is optional, because it has to be 1, so it can be omitted */
     free(img);
-    img = io_png_read_pp_flt(argv[1], &nx, &ny, NULL, IO_PNG_OPT_GRAY);
+    img = io_png_read_flt_opt(argv[1], &nx, &ny, NULL, IO_PNG_OPT_GRAY);
 
     /* let's read the pixel (27, 42) */
     if (nx >= 27 && ny >= 42) {
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 
     /* or we can decide to read the image converted to RGB */
     free(img);
-    img = io_png_read_pp_flt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_RGB);
+    img = io_png_read_flt_opt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_RGB);
 
     /* we now have a 3 channel RGB image */
     assert(nc == 3);
@@ -157,17 +157,19 @@ int main(int argc, char **argv)
 
     img_uchar = io_png_read_uchar(argv[1], &nx, &ny, &nc);
     free(img_uchar);
-    img_uchar = io_png_read_pp_uchar(argv[1], &nx, &ny, &nc, IO_PNG_OPT_GRAY);
+    img_uchar =
+        io_png_read_uchar_opt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_GRAY);
     free(img_uchar);
-    img_uchar = io_png_read_pp_uchar(argv[1], &nx, &ny, &nc, IO_PNG_OPT_RGB);
+    img_uchar = io_png_read_uchar_opt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_RGB);
     io_png_write_uchar("from_uchar.png", img_uchar, nx, ny, nc);
     free(img_uchar);
 
     img_ushrt = io_png_read_ushrt(argv[1], &nx, &ny, &nc);
     free(img_ushrt);
-    img_ushrt = io_png_read_pp_ushrt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_GRAY);
+    img_ushrt =
+        io_png_read_ushrt_opt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_GRAY);
     free(img_ushrt);
-    img_ushrt = io_png_read_pp_ushrt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_RGB);
+    img_ushrt = io_png_read_ushrt_opt(argv[1], &nx, &ny, &nc, IO_PNG_OPT_RGB);
     io_png_write_ushrt("from_ushrt.png", img_ushrt, nx, ny, nc);
     free(img_ushrt);
 

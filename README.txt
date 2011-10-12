@@ -107,9 +107,9 @@ type you want to use:
 Three other read functions add a preprocessing step, to ensure you
 always receive the same kind of image, whatever the file contains:
 
-* io_png_read_pp_flt(fname, &nx, &ny, &nc, option)
-* io_png_read_pp_uchar(fname, &nx, &ny, &nc, option)
-* io_png_read_pp_uchar(fname, &nx, &ny, &nc, option)
+* io_png_read_flt_opt(fname, &nx, &ny, &nc, option)
+* io_png_read_uchar_opt(fname, &nx, &ny, &nc, option)
+* io_png_read_uchar_opt(fname, &nx, &ny, &nc, option)
 
 Thew option parameter is:
 - IO_PNG_OPT_NONE do nothing
@@ -125,7 +125,7 @@ currently downscaled to 8bit before being read.
 A PNG image is written from a single array, with the same layout as
 the one received from the read functions.
 
-Two write functions are available, depending on the data type you want
+Three write functions are available, depending on the data type you want
 to use:
 
 * io_png_write_flt(fname, data, nx, ny, nc)
@@ -137,6 +137,18 @@ to use:
   write a 8bit PNG image from a [0,UCHAR_MAX] unsigned char array
 * io_png_write_ushrt(fname, data, nx, ny, nc)
   !!UNTESTED!! write a 8bit PNg image from a [0,USHRT_MAX] unsigned short array
+
+Three other write functions add processing step, to tune the file content:
+
+* io_png_write_flt(fname, data, nx, ny, nc, option)
+* io_png_write_uchar(fname, data, nx, ny, nc, option)
+* io_png_write_ushrt(fname, data, nx, ny, nc, option)
+
+The option parameter can be a combinaison of:
+- IO_PNG_OPT_NONE  do nothing
+- IO_PNG_OPT_ADAM7 do a Adam7 pixel interlacing for progressive display
+- IO_PNG_OPT_ZMIN  use minimum data compression (fast, large)
+- IO_PNG_OPT_ZMIN  use maximum data compression (small, slow)
 
 ## EXAMPLE
 
