@@ -10,9 +10,12 @@ extern "C" {
 #include <stddef.h>
 
 typedef enum io_png_opt_e {
-    IO_PNG_OPT_NONE = 0,
-    IO_PNG_OPT_RGB = 1,
-    IO_PNG_OPT_GRAY = 2
+    IO_PNG_OPT_NONE = 0x00,
+    IO_PNG_OPT_RGB = 0x01,
+    IO_PNG_OPT_GRAY = 0x02,
+    IO_PNG_OPT_ADAM7 = 0x10,
+    IO_PNG_OPT_ZMIN = 0x20,
+    IO_PNG_OPT_ZMAX = 0x40
 } io_png_opt_t;
 
 /* io_png.c */

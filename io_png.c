@@ -659,12 +659,15 @@ unsigned short *io_png_read_ushrt(const char *fname,
  * @param fname PNG file name, "-" means stdout
  * @param data non interlaced (RRRGGGBBBAAA) float image array
  * @param nx, ny, nc number of columns, lines and channels
+ * @param opt processing option, can be IO_PNG_OPT_ADAM7,
+ *         IO_PNG_OPT_ZMIN or IO_PNG_OPT_ZMAX,
+ *         IO_PNG_OPT_NONE to do nothing
  * @return void, abort() on error
  *
  * @todo handle 16bit
  */
 static void _io_png_write(const char *fname, const float *data,
-                          size_t nx, size_t ny, size_t nc)
+                          size_t nx, size_t ny, size_t nc, io_png_opt_t opt)
 {
     png_structp png_ptr;
     png_infop info_ptr;
@@ -674,7 +677,7 @@ static void _io_png_write(const char *fname, const float *data,
     float *tmp;
     /* volatile: because of setjmp/longjmp */
     FILE *volatile fp;
-    int color_type, interlace, compression, filter;
+    int color_type, interlace, compression, compression_level, filter;
     size_t i;
     /* error structure */
     _io_png_err_t err;
@@ -732,13 +735,25 @@ static void _io_png_write(const char *fname, const float *data,
     default:
         _IO_PNG_ABORT("bad parameters");
     }
-    interlace = PNG_INTERLACE_ADAM7;
+
     compression = PNG_COMPRESSION_TYPE_BASE;
     filter = PNG_FILTER_TYPE_BASE;
+
+    interlace = PNG_INTERLACE_NONE;
+    if (opt & IO_PNG_OPT_ADAM7)
+        interlace = PNG_INTERLACE_ADAM7;
 
     /* set image header */
     png_set_IHDR(png_ptr, info_ptr, (png_uint_32) nx, (png_uint_32) ny,
                  bit_depth, color_type, interlace, compression, filter);
+
+    compression_level = 5;
+    if (opt & IO_PNG_OPT_ZMIN)
+        compression_level = 0;
+    if (opt & IO_PNG_OPT_ZMAX)
+        compression_level = 9;
+    png_set_compression_level(png_ptr, compression_level);
+
     /* TODO : significant bit (sBIT), gamma (gAMA) chunks */
     png_write_info(png_ptr, info_ptr);
 
@@ -776,7 +791,7 @@ static void _io_png_write(const char *fname, const float *data,
 void io_png_write_flt(const char *fname, const float *data,
                       size_t nx, size_t ny, size_t nc)
 {
-    _io_png_write(fname, data, nx, ny, nc);
+    _io_png_write(fname, data, nx, ny, nc, IO_PNG_OPT_NONE);
     return;
 }
 
@@ -798,7 +813,7 @@ void io_png_write_uchar(const char *fname, const unsigned char *data,
     float *flt_data;
 
     flt_data = _io_png_uchar2flt(data, nx * ny * nc);
-    _io_png_write(fname, flt_data, nx, ny, nc);
+    _io_png_write(fname, flt_data, nx, ny, nc, IO_PNG_OPT_NONE);
     free(flt_data);
     return;
 }
@@ -823,7 +838,7 @@ void io_png_write_ushrt(const char *fname, const unsigned short *data,
     float *flt_data;
 
     flt_data = _io_png_ushrt2flt(data, nx * ny * nc);
-    _io_png_write(fname, flt_data, nx, ny, nc);
+    _io_png_write(fname, flt_data, nx, ny, nc, IO_PNG_OPT_NONE);
     free(flt_data);
     return;
 }
