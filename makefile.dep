@@ -1,0 +1,4 @@
+io_png.o: io_png.c io_png.h
+readpng.o: example/readpng.c io_png.h
+mmms.o: example/mmms.c io_png.h
+axpb.o: example/axpb.c io_png.h

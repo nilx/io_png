@@ -13,16 +13,18 @@ OBJ	= $(SRC:.c=.o)
 BIN	= $(filter example/%, $(SRC:.c=))
 
 # C compiler optimization options
-COPT	= -O3
+COPT	= -O2
 # complete C compiler options
 CFLAGS	= $(COPT)
 # preprocessot options
 CPPFLAGS	= -I. -DNDEBUG
 # linker options
-LDFLAGS	= -lpng -lm
+LDFLAGS	=
+# libraries
+LDLIBS	= -lpng -lm
+
 # library build dependencies (none)
 LIBDEPS =
-
 # use local embedded libraries
 ifdef LOCAL_LIBS
 -include	makefile.libs
@@ -31,6 +33,11 @@ endif
 # default target: the example programs
 default: $(BIN)
 
+# dependencies
+-include makefile.dep
+makefile.dep    : $(SRC)
+	$(CC) $(CPPFLAGS) -MM $^ > $@
+
 # build the png library
 .PHONY	: libpng
 libpng	:
@@ -38,12 +45,12 @@ libpng	:
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c $(LIBDEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
 # final link of an example program
 example/%	: $(LIBDEPS)
 example/%	: example/%.o io_png.o
-	$(CC) $^ $(LDLIBS) $(LDFLAGS) -o $@
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 # cleanup
 .PHONY	: clean distclean scrub
