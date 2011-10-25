@@ -35,8 +35,6 @@ default: $(BIN)
 
 # dependencies
 -include makefile.dep
-makefile.dep    : $(SRC)
-	$(CC) $(CPPFLAGS) -MM $^ > $@
 
 # build the png library
 .PHONY	: libpng
