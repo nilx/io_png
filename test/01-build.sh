@@ -13,6 +13,9 @@ _test_run() {
     dos2unix $TEMPFILE
     test "9edef44b78fca2d0f129d3c5b788292b  $TEMPFILE" \
 	= "$(md5sum $TEMPFILE)"
+    ./example/axpb 1 - 0 - < data/lena_g.png > $TEMPFILE
+    test "b8a0502abf9127666aa093eb346288b7  $TEMPFILE" \
+	= "$(md5sum $TEMPFILE)"
     rm -f $TEMPFILE
     # test all the read-write code variants
     ./example/readpng data/lena_g.png

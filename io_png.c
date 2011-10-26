@@ -47,6 +47,21 @@
 #include <png.h>
 #endif
 
+/* unified Windows detection */
+#if (defined(_WIN32) || defined(__WIN32__) \
+     || defined(__TOS_WIN__) || defined(__WINDOWS__))
+/* from http://predef.sourceforge.net/preos.html#sec25 */
+#ifndef WIN32
+#define WIN32
+#endif
+/*
+ * On windows systems, the streams mist be reset to binary mode with
+ * setmode() to avoid CRLF translation and other nasty side-effects.
+ */
+#include <io.h>
+#include <fcntl.h>
+#endif
+
 /* ensure consistency */
 #include "io_png.h"
 
@@ -382,10 +397,17 @@ static float *_io_png_read(const char *fname,
     assert(NULL != fname && NULL != nxp && NULL != nyp && NULL != ncp);
 
     /* open the PNG input file */
-    if (0 == strcmp(fname, "-"))
+    if (0 == strcmp(fname, "-")) {
         fp = stdin;
-    else if (NULL == (fp = fopen(fname, "rb")))
-        _IO_PNG_ABORT("failed to open file");
+#ifdef WIN32                    /* set the stream to binary mode */
+        fflush(fp);
+        setmode(fileno(fp), O_BINARY);
+#endif
+    }
+    else {
+        if (NULL == (fp = fopen(fname, "rb")))
+            _IO_PNG_ABORT("failed to open file");
+    }
 
     /* read in some of the signature bytes and check this signature */
     if ((PNG_SIG_LEN != fread(png_sig, 1, PNG_SIG_LEN, fp))
@@ -691,11 +713,17 @@ static void _io_png_write(const char *fname, const float *data,
     free(tmp);
 
     /* open the PNG output file */
-    if (0 == strcmp(fname, "-"))
+    if (0 == strcmp(fname, "-")) {
         fp = stdout;
-    else if (NULL == (fp = fopen(fname, "wb")))
-        _IO_PNG_ABORT("failed to open file");
-
+#ifdef WIN32                    /* set the stream to binary mode */
+        fflush(fp);
+        setmode(fileno(fp), O_BINARY);
+#endif
+    }
+    else {
+        if (NULL == (fp = fopen(fname, "wb")))
+            _IO_PNG_ABORT("failed to open file");
+    }
     /* allocate the row pointers */
     row_pointers = _IO_PNG_SAFE_MALLOC(ny, png_bytep);
 
