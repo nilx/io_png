@@ -447,6 +447,9 @@ static float *_io_png_read(const char *fname,
     png_transform = (PNG_TRANSFORM_IDENTITY
                      | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_STRIP_16);
 
+    /* convert palette to RGB */
+    png_set_palette_to_rgb(png_ptr);
+
     /*
      * read in the entire image at once
      * then collect the image informations

@@ -21,11 +21,6 @@ _test_run() {
     ./example/readpng data/lena_g.png
 }
 
-# Test the need for a dynamic libpng library
-_test_ldd() {
-    test "0" = "$(ldd example/mmms | grep -c png)"
-}
-
 ################################################
 
 _log_init
@@ -40,7 +35,7 @@ _log make clean
 _log make
 
 echo "* compiler support"
-for CC in cc c++ c89 c99 gcc g++ tcc nwcc clang icc pathcc suncc \
+for CC in cc c++ c89 c99 gcc g++ tcc clang icc suncc \
     i586-mingw32msvc-cc; do
     which $CC || continue
     echo "* $CC compiler"
@@ -61,12 +56,6 @@ for CC in cc c++ c89 c99 gcc g++ tcc nwcc clang icc pathcc suncc \
     _log _test_run
     rm -f ./example/*.dll
 done
-
-echo "* build with embedded libraries"
-_log make scrub
-_log make LOCAL_LIBS=1
-_log _test_run
-_log _test_ldd
 
 _log make distclean
 

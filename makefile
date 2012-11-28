@@ -25,21 +25,9 @@ LDLIBS	= -lpng -lm
 
 # library build dependencies (none)
 LIBDEPS =
-# use local embedded libraries
-ifdef LOCAL_LIBS
--include	makefile.libs
-endif
 
 # default target: the example programs
 default: $(BIN)
-
-# dependencies
--include makefile.dep
-
-# build the png library
-.PHONY	: libpng
-libpng	:
-	$(MAKE) -C libs libpng
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c $(LIBDEPS)
@@ -51,17 +39,13 @@ example/%	: example/%.o io_png.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 # cleanup
-.PHONY	: clean distclean scrub
+.PHONY	: clean distclean
 clean	:
 	$(RM) $(OBJ)
 	$(RM) *.flag
-	$(MAKE) -C libs $@
 distclean	: clean
 	$(RM) $(BIN)
 	$(RM) -r srcdoc
-	$(MAKE) -C libs $@
-scrub	: distclean
-	$(MAKE) -C libs $@
 
 ################################################
 # dev tasks
