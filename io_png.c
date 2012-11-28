@@ -209,6 +209,9 @@ static void *io_png_read_raw(const char *fname,
      */
     png_transform |= (PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING);
 
+    /* convert palette to RGB */
+    png_set_palette_to_rgb(png_ptr);
+
     /* read in the entire image at once */
     png_read_png(png_ptr, info_ptr, png_transform, NULL);
 
