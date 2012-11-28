@@ -23,26 +23,8 @@ LDFLAGS	= -lpng -lm
 # library build dependencies (none)
 LIBDEPS =
 
-# use local embedded libraries
-ifdef LOCAL_LIBS
-# library location
-LIBDIR = ./libs/build/lib
-INCDIR = ./libs/build/include
-# libpng is required
-LIBDEPS += libpng
-# compile options to use the local libpng header
-CFLAGS 	+= -I$(INCDIR) -DIO_PNG_LOCAL_LIBPNG
-# link options to use the local libraries
-LDFLAGS = $(LIBDIR)/libpng.a $(LIBDIR)/libz.a -lm
-endif
-
 # default target: the example programs
 default: $(BIN)
-
-# build the png library
-.PHONY	: libpng
-libpng	:
-	$(MAKE) -C libs libpng
 
 # partial C compilation xxx.c -> xxx.o
 %.o	: %.c $(LIBDEPS)
@@ -53,17 +35,13 @@ example/%	: example/%.o io_png.o $(LIBDEPS)
 	$(CC) $< io_png.o $(LDFLAGS) -o $@
 
 # cleanup
-.PHONY	: clean distclean scrub
+.PHONY	: clean distclean
 clean	:
 	$(RM) $(OBJ)
 	$(RM) *.flag
-	$(MAKE) -C libs $@
 distclean	: clean
 	$(RM) $(BIN)
 	$(RM) -r srcdoc
-	$(MAKE) -C libs $@
-scrub	: distclean
-	$(MAKE) -C libs $@
 
 ################################################
 # extra tasks

@@ -23,11 +23,6 @@ _test_mmms() {
     rm -f $TEMPFILE
 }
 
-# Test the need for a dynamic libpng library
-_test_ldd() {
-    test "0" = "$(ldd example/mmms | grep -c png)"
-}
-
 ################################################
 
 _log_init
@@ -41,7 +36,7 @@ _log make clean
 _log make
 
 echo "* compiler support"
-for CC in cc c++ gcc g++ tcc nwcc clang icc pathcc suncc; do
+for CC in cc c++ gcc g++ tcc clang icc suncc; do
     which $CC || continue
     echo "* $CC compiler"
     _log make distclean
@@ -53,12 +48,6 @@ for CC in cc c++ gcc g++ tcc nwcc clang icc pathcc suncc; do
     esac
     _log _test_mmms
 done
-
-echo "* build with embedded libraries"
-_log make scrub
-_log make LOCAL_LIBS=1
-_log _test_mmms
-_log _test_ldd
 
 _log make distclean
 
