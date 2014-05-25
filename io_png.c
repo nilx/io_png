@@ -39,6 +39,7 @@
 #include <math.h>
 #include <limits.h>
 #include <assert.h>
+#include <string.h>
 
 /* option to use a local version of the libpng */
 #ifdef IO_PNG_LOCAL_LIBPNG
